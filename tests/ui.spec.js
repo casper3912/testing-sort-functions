@@ -115,7 +115,7 @@ test.describe("live sort tester — the pass/fail matrix", () => {
     // Finite-alphabet sequences expose it immediately.
     expect(await runTester(page, "dedup", "seq", 6)).toMatch(/FAIL/);
     await expect(page.locator("#t-flen")).not.toHaveText("—");
-    await expect(page.locator("#t-counter svg")).toBeVisible();
+    await expect(page.locator("#t-counter svg").first()).toBeVisible();
 
     expect(await runTester(page, "dedup", "binary", 8)).toMatch(/FAIL/);
   });
