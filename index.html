@@ -1,0 +1,1947 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testing Sort Functions — Exhaustive Testing over Finite Value Domains</title>
+<style>
+:root{
+  --bg:#eef1f6; --panel:#ffffff; --panel-2:#f7f9fc;
+  --ink:#161c2b; --ink-soft:#3d4557; --muted:#5c6472; --faint:#6b7280;
+  --line:#e2e7f0; --line-2:#d3dae7;
+  --accent:#4f46e5; --accent-2:#0d9488; --accent-soft:#eef0fe;
+  --warn:#b45309; --warn-bg:#fff7ed; --warn-line:#fed7aa;
+  --key:#0d9488; --key-bg:#effcf9; --key-line:#a7f3d0;
+  --bad:#dc2626; --good:#15803d;
+  --code-bg:#0f1729; --code-ink:#e5ecf6;
+  --c-comment:#7c8bab; --c-string:#7ee0a6; --c-keyword:#c0a9ff;
+  --c-number:#f4a98b; --c-fn:#7db9ff; --c-type:#5ad1c4;
+  --radius:14px; --shadow:0 1px 2px rgba(20,28,43,.05),0 8px 30px rgba(20,28,43,.06);
+  --mono:ui-monospace,"SF Mono","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+/* --- accessibility & readability (WCAG 2.2: 2.4.1, 2.4.7/2.4.13, 2.3.3) --- */
+.skip-link{position:absolute;left:-9999px;top:0;z-index:200;background:var(--accent);color:#fff;
+  padding:10px 16px;font-weight:650;border-radius:0 0 10px 0;text-decoration:none}
+.skip-link:focus{left:0}
+:where(a,button,select,input,summary,[tabindex]):focus-visible{
+  outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+/* Reading measure: keep prose lines in the ~50–75 character range (NN/g, Baymard);
+   interactive widgets, tables, code and the hero stay full width. */
+main section > p, main section > ul, main section > ol, .lead, .callout{max-width:70ch}
+main section > p, .lead{text-wrap:pretty}
+h1,h2,h3{text-wrap:balance}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:16.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.9em}
+p code,li code,td code{background:#eceff7;color:#33406b;padding:.08em .4em;border-radius:6px;border:1px solid #e0e5f0;font-size:.86em}
+
+/* ---------- top bar ---------- */
+header.top{
+  position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);
+  backdrop-filter:saturate(1.6) blur(10px);border-bottom:1px solid var(--line);
+}
+.top-inner{max-width:1240px;margin:0 auto;padding:10px 22px;display:flex;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:-.01em;font-size:15px}
+.brand .glyph{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#7c74f0);
+  display:grid;place-items:center;color:#fff;font-size:14px;box-shadow:0 2px 8px rgba(79,70,229,.35)}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:11.5px;letter-spacing:0}
+.langbar{margin-left:auto;display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);
+  padding:4px;border-radius:11px;flex-wrap:wrap}
+.langbar button{
+  font:inherit;font-size:12.5px;font-weight:600;border:0;background:transparent;color:var(--muted);
+  padding:5px 10px;border-radius:8px;cursor:pointer;transition:.12s;white-space:nowrap}
+.langbar button:hover{color:var(--ink);background:#eceff7}
+.langbar button.active{background:var(--accent);color:#fff;box-shadow:0 1px 4px rgba(79,70,229,.4)}
+
+/* ---------- layout ---------- */
+.layout{max-width:1240px;margin:0 auto;padding:0 22px;display:grid;
+  grid-template-columns:250px minmax(0,1fr);gap:40px;align-items:start}
+nav.toc{position:sticky;top:74px;align-self:start;padding:22px 0 40px;max-height:calc(100vh - 74px);overflow:auto}
+nav.toc .lbl{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 12px}
+nav.toc a{display:block;color:var(--ink-soft);font-size:13.5px;padding:6px 12px;border-radius:8px;
+  border-left:2px solid transparent;line-height:1.35;margin-bottom:1px}
+nav.toc a:hover{background:#e9edf6;text-decoration:none;color:var(--ink)}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-soft);font-weight:600}
+nav.toc a .n{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:8px;font-size:12px}
+main{padding:30px 0 120px;min-width:0}
+
+/* ---------- hero ---------- */
+.hero{background:linear-gradient(160deg,#111a33,#1f2b52 60%,#3a2f7a);color:#fff;border-radius:20px;
+  padding:40px 40px 36px;box-shadow:var(--shadow);position:relative;overflow:hidden;margin-bottom:14px}
+.hero::after{content:"";position:absolute;inset:0;background:
+  radial-gradient(600px 200px at 85% -10%,rgba(124,116,240,.5),transparent),
+  radial-gradient(500px 240px at 5% 120%,rgba(13,148,136,.35),transparent);pointer-events:none}
+.hero .tag{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.04em;color:#c9d0ff;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);padding:4px 11px;border-radius:999px;margin-bottom:16px}
+.hero h1{margin:0 0 12px;font-size:34px;line-height:1.12;letter-spacing:-.02em;font-weight:800;position:relative}
+.hero p{margin:0;max-width:64ch;color:#d6dcf2;font-size:16px;position:relative}
+.hero .facts{display:flex;gap:26px;flex-wrap:wrap;margin-top:22px;position:relative}
+.hero .facts div{font-size:12.5px;color:#aeb7dd}
+.hero .facts b{display:block;font-size:20px;color:#fff;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- sections & type ---------- */
+section{scroll-margin-top:78px;margin-top:52px}
+section>h2{font-size:26px;letter-spacing:-.02em;font-weight:750;margin:0 0 4px;line-height:1.2;display:flex;gap:12px;align-items:baseline}
+section>h2 .num{font-size:14px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;
+  background:var(--accent-soft);padding:2px 9px;border-radius:7px;transform:translateY(-3px)}
+h3{font-size:18px;font-weight:700;letter-spacing:-.01em;margin:30px 0 6px}
+.lead{font-size:17.5px;color:var(--ink-soft);margin:6px 0 0}
+p{margin:14px 0}
+main p,main li{color:var(--ink-soft)}
+strong{color:var(--ink);font-weight:650}
+ul,ol{padding-left:22px}
+li{margin:7px 0}
+hr.soft{border:0;border-top:1px solid var(--line);margin:30px 0}
+
+/* ---------- callouts ---------- */
+.callout{border-radius:12px;padding:14px 18px;margin:20px 0;font-size:15px;border:1px solid;display:flex;gap:12px}
+.callout .ic{flex:0 0 auto;font-weight:800;font-size:14px;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;margin-top:1px}
+.callout p{margin:0}
+.callout p+p{margin-top:8px}
+.note{background:var(--accent-soft);border-color:#d9dcfb;color:#31374d}
+.note .ic{background:var(--accent);color:#fff}
+.warn{background:var(--warn-bg);border-color:var(--warn-line);color:#7c4a12}
+.warn .ic{background:var(--warn);color:#fff}
+.key{background:var(--key-bg);border-color:var(--key-line);color:#0b5a52}
+.key .ic{background:var(--key);color:#fff}
+
+/* ---------- code ---------- */
+.codeblock{margin:20px 0;border-radius:12px;overflow:hidden;border:1px solid #1d2740;box-shadow:var(--shadow)}
+.code-head{background:#0b1120;color:#8ea0c2;font-size:12px;display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-bottom:1px solid #1d2740;font-family:var(--mono)}
+.code-head .dot{width:10px;height:10px;border-radius:50%}
+.code-head .lang{margin-left:4px;color:#c6d2ea;font-weight:600}
+.code-head .file{color:#5f6f92}
+.code-head .copy{margin-left:auto;background:#18223c;border:1px solid #263251;color:#b7c4de;
+  font-size:11.5px;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:var(--sans);font-weight:600;transition:.12s}
+.code-head .copy:hover{background:#22304f;color:#fff}
+.code-head .copy.ok{background:#0d5540;border-color:#1c7a5e;color:#c8ffe9}
+pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:16px 18px;overflow:auto;
+  font-family:var(--mono);font-size:13.2px;line-height:1.62;tab-size:4}
+pre .c{color:var(--c-comment);font-style:italic}
+pre .s{color:var(--c-string)}
+pre .k{color:var(--c-keyword);font-weight:600}
+pre .n{color:var(--c-number)}
+pre .fn{color:var(--c-fn)}
+pre .t{color:var(--c-type)}
+.codeblock[data-empty]::after{content:"— snippet unavailable —";display:block;padding:14px;color:#8ea0c2;background:var(--code-bg);font-family:var(--mono);font-size:12px}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;margin:20px 0;box-shadow:var(--shadow);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+th{background:var(--panel-2);font-weight:650;color:var(--ink);font-size:12.5px;letter-spacing:.02em;position:sticky;top:0}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--panel-2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.pill.g{background:#dcfce7;color:#15803d}.pill.y{background:#fef9c3;color:#a16207}.pill.r{background:#fee2e2;color:#b91c1c}
+
+/* ---------- lab widgets ---------- */
+.lab{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:var(--shadow);
+  margin:24px 0;overflow:hidden}
+.lab-head{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#fbfcfe,#f4f7fb)}
+.lab-head .badge{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#fff;background:var(--accent-2);
+  padding:3px 8px;border-radius:6px}
+.lab-head h4{margin:0;font-size:15px;font-weight:700;color:var(--ink)}
+.lab-head .sub{margin-left:auto;font-size:12px;color:var(--muted)}
+.lab-body{padding:18px}
+.controls{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:flex-end;margin-bottom:6px}
+.ctl{display:flex;flex-direction:column;gap:5px}
+.ctl label{font-size:11.5px;font-weight:650;color:var(--muted);letter-spacing:.02em;text-transform:uppercase}
+.ctl .val{color:var(--accent);font-variant-numeric:tabular-nums}
+input[type=range]{width:170px;accent-color:var(--accent);cursor:pointer}
+select,.btn{font:inherit;font-size:13.5px;border:1px solid var(--line-2);background:#fff;color:var(--ink);
+  padding:7px 12px;border-radius:9px;cursor:pointer}
+select{padding:7px 30px 7px 12px;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7488' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center}
+.btn{font-weight:650}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#4038c9;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;overflow:hidden}
+.seg button{font:inherit;font-size:12.5px;font-weight:600;border:0;background:#fff;color:var(--muted);padding:7px 12px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.active{background:var(--accent);color:#fff}
+
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
+.stat{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+.stat .k{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+.stat .v{font-size:19px;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.stat.accent .v{color:var(--accent)}
+.stat.good .v{color:var(--good)}.stat.bad .v{color:var(--bad)}
+
+.mono-out{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:10px;padding:12px;max-height:230px;overflow:auto;line-height:1.7;color:var(--ink-soft)}
+.seq-chip{display:inline-flex;gap:1px;margin:3px;padding:2px;border-radius:7px;background:#fff;border:1px solid var(--line)}
+.seq-chip b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono)}
+svg{display:block;max-width:100%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.hint{font-size:12.5px;color:var(--muted);margin-top:10px}
+.hint b{color:var(--ink-soft)}
+
+.foot{margin-top:70px;padding-top:26px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+.foot a{font-weight:600}
+
+@media (max-width:920px){
+  .layout{grid-template-columns:1fr;gap:0}
+  nav.toc{display:none}
+  .hero{padding:28px 22px}
+  .hero h1{font-size:26px}
+  main{padding:22px 0 80px}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <span class="glyph">⇅</span>
+      <span>Testing Sort Functions<small>Exhaustive coverage over finite value domains</small></span>
+    </div>
+    <div class="langbar" id="langbar" role="group" aria-label="Code language for all examples">
+      <button data-lang="python" class="active" aria-pressed="true">Python</button>
+      <button data-lang="javascript" aria-pressed="false">JavaScript</button>
+      <button data-lang="typescript" aria-pressed="false">TypeScript</button>
+      <button data-lang="java" aria-pressed="false">Java</button>
+      <button data-lang="cpp" aria-pressed="false">C++</button>
+      <button data-lang="rust" aria-pressed="false">Rust</button>
+      <button data-lang="go" aria-pressed="false">Go</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" id="toc" aria-label="Section navigation">
+    <p class="lbl" id="toc-lbl">Contents</p>
+    <a href="#intro"><span class="n">01</span>Why sorts are hard to test</a>
+    <a href="#oracle"><span class="n">02</span>The correctness oracle</a>
+    <a href="#strategies"><span class="n">03</span>Three testing strategies</a>
+    <a href="#finite"><span class="n">04</span>Finite domains: all sequences</a>
+    <a href="#permutations"><span class="n">05</span>All permutations</a>
+    <a href="#multisets"><span class="n">06</span>Combinations with repetition</a>
+    <a href="#metrics"><span class="n">07</span>How big is the test space?</a>
+    <a href="#zeroone"><span class="n">08</span>The 0–1 principle</a>
+    <a href="#harness"><span class="n">09</span>The exhaustive harness</a>
+    <a href="#shrinking"><span class="n">10</span>Minimal counterexamples</a>
+    <a href="#edge"><span class="n">11</span>Edge cases &amp; properties</a>
+    <a href="#recipe"><span class="n">12</span>A practical recipe</a>
+    <a href="#reference"><span class="n">13</span>Reference &amp; reading</a>
+  </nav>
+
+  <main id="main" tabindex="-1">
+    <div class="hero">
+      <span class="tag">A comprehensive, interactive reference</span>
+      <h1>How to test a sort function — exhaustively.</h1>
+      <p>When the values a sort can see come from a <strong>finite, limited domain</strong>, you don't have to <em>sample</em> inputs and hope. You can <strong>recursively generate every input</strong> up to a bound and prove the sort correct over that whole space. This guide shows the generators, the correctness oracle, the metrics that tell you how far you can push, and live visualizations — with copyable code in six languages.</p>
+      <div class="facts">
+        <div><b>kⁿ</b>all sequences over k values</div>
+        <div><b>n!</b>all permutations of n keys</div>
+        <div><b>2ⁿ</b>the 0–1 principle shortcut</div>
+        <div><b>6</b>languages, side by side</div>
+      </div>
+    </div>
+
+    <section id="intro">
+      <h2><span class="num">01</span>Why sorts are hard to test well</h2>
+      <p class="lead">A sort is one line to describe and surprisingly easy to test <em>badly</em>. The usual mistake is checking a handful of hand-picked inputs against hand-written expected outputs.</p>
+      <p>That style — <code>assert sort([3,1,2]) == [1,2,3]</code> — documents intent, but its coverage is exactly whatever cases you happened to imagine. It systematically misses the two things that actually break sorts:</p>
+      <ul>
+        <li><strong>Lost, duplicated, or invented elements.</strong> A sort that quietly drops a duplicate key still returns something <em>ordered</em>. If your assertion only eyeballs "looks sorted," it passes.</li>
+        <li><strong>Order-dependent bugs.</strong> Off-by-one boundaries, bad pivots, and unstable merges surface only on particular arrangements — reverse order, a single out-of-place element, all-equal runs.</li>
+      </ul>
+      <p>The fix has two moves. First, stop comparing against fixed outputs and instead check the <strong>properties</strong> every correct sort must satisfy (the <em>oracle</em>, §02). Second — the heart of this guide — when the element values are drawn from a <strong>small finite set</strong>, <strong>enumerate every possible input</strong> by recursion instead of sampling. Total coverage over a bounded space is a proof, not a guess.</p>
+      <div class="callout key"><span class="ic">★</span><p><strong>The core idea.</strong> Finite value domain + bounded length ⇒ a <em>finite</em> set of possible inputs ⇒ generate and test all of them. Recursion is what makes "all of them" tractable to produce.</p></div>
+    </section>
+
+    <section id="oracle">
+      <h2><span class="num">02</span>The correctness oracle</h2>
+      <p class="lead">Before you can test every input, you need a check that decides — for any input — whether an output is correct, without knowing the "answer" in advance.</p>
+      <p>A function <code>sort</code> is correct on input <code>xs</code> when its result <code>ys</code> satisfies <strong>both</strong> of these, and either one alone is a trap:</p>
+      <ol>
+        <li><strong>Ordered.</strong> <code>ys[i] ≤ ys[i+1]</code> for every adjacent pair (under your comparator).</li>
+        <li><strong>Permutation of the input.</strong> <code>ys</code> contains exactly the same elements as <code>xs</code>, with the same multiplicities — a <em>multiset</em> equality.</li>
+      </ol>
+      <div class="callout warn"><span class="ic">!</span><p><strong>Neither property is sufficient alone.</strong> Returning <code>[0,1,2,…,len-1]</code> is always ordered but almost never a permutation. Returning the input untouched is always a permutation but rarely ordered. Only the <em>conjunction</em> pins down "sorted."</p></div>
+      <p>The multiset check is the one people skip, and it's exactly the one that catches dropped or duplicated elements. Compare element counts (a histogram / <code>Counter</code> / <code>multiset</code>), not sorted-equality — using a second sort to verify your sort is circular.</p>
+      <p>Two more properties are cheap and worth asserting when they apply: <strong>idempotency</strong> (<code>sort(sort(xs)) == sort(xs)</code>) and <strong>stability</strong> (equal keys keep their input order — testable with <code>(key, tag)</code> pairs, see §11).</p>
+      <div class="codeblock" data-snippet="oracle"></div>
+    </section>
+
+    <section id="strategies">
+      <h2><span class="num">03</span>Three testing strategies</h2>
+      <p class="lead">Given an oracle, how do you choose inputs? Three levels, from weakest to strongest coverage.</p>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Strategy</th><th>How inputs are chosen</th><th>Guarantee</th><th>Best when</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Example-based</strong></td><td>You write them by hand</td><td>Only the cases you thought of</td><td>Documenting intent, regression pins</td></tr>
+          <tr><td><strong>Property / randomized</strong><br><span class="hint">QuickCheck, Hypothesis</span></td><td>Random inputs, checked vs the oracle</td><td>Probabilistic; nondeterministic</td><td>Large or infinite value domains</td></tr>
+          <tr><td><strong>Exhaustive</strong> <span class="pill g">focus</span></td><td>Every input in a bounded space, by recursion</td><td>A proof over that space; fully reproducible</td><td>Finite / limited value domain</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>These are complements, not rivals. The strongest suites do all three: an oracle applied to <strong>exhaustive</strong> small inputs (deterministic proof for the cases most likely to expose logic bugs), plus <strong>randomized</strong> large inputs with shrinking (§10) for scale, plus a few <strong>example</strong> regressions. This guide develops the exhaustive path, which becomes available precisely when — as the request frames it — the number of distinct values is finite or limited.</p>
+      <div class="callout note"><span class="ic">i</span><p><strong>Why exhaustive small inputs are so effective.</strong> Almost every real sorting bug has a <em>small witness</em>: a counterexample of length ≤ 4 or 5. Enumerating all short inputs over a tiny alphabet reliably surfaces those witnesses, deterministically, on every CI run.</p></div>
+    </section>
+
+    <section id="finite">
+      <h2><span class="num">04</span>Finite value domains: generate every sequence</h2>
+      <p class="lead">If each element comes from an alphabet of <code>k</code> symbols, then the length-<code>n</code> inputs are the k-ary Cartesian product — exactly <strong>kⁿ</strong> sequences. Recursion enumerates them all.</p>
+      <p>"Finite / limited values" describes a huge share of real sorts: booleans (k=2), an enum or status code (k=3–8), small integers, priority buckets, a handful of key classes, bytes (k=256). Pick a small representative alphabet — the classic choices are <code>{0,1}</code> and <code>{0,1,2}</code> — and enumerate every sequence up to some length <code>L</code>. That covers <code>1 + k + k² + … + k^L</code> inputs with zero gaps.</p>
+      <p>The generator is a backtracking walk: choose a symbol for position 0, recurse to fill the rest, then undo the choice and try the next symbol. The recursion tree below <em>is</em> the algorithm — each root-to-leaf path spells one sequence, and a depth-first walk yields them in generation order.</p>
+
+      <div class="lab">
+        <div class="lab-head"><span class="badge">LAB</span><h4>Recursive sequence generator</h4><span class="sub">Cartesian product · kⁿ</span></div>
+        <div class="lab-body">
+          <div class="controls">
+            <div class="ctl"><label for="tree-k">Alphabet size k · <span class="val" id="tree-k-v">2</span></label><input type="range" id="tree-k" min="2" max="4" value="2" aria-label="Alphabet size k"></div>
+            <div class="ctl"><label for="tree-n">Length n · <span class="val" id="tree-n-v">3</span></label><input type="range" id="tree-n" min="1" max="4" value="3" aria-label="Sequence length n"></div>
+            <div class="ctl"><button class="btn primary" id="tree-play">▶ Animate walk</button></div>
+            <div class="ctl"><button class="btn" id="tree-reset">Reset</button></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat accent"><div class="k">Sequences kⁿ</div><div class="v" id="tree-count">8</div></div>
+            <div class="stat"><div class="k">Tree nodes</div><div class="v" id="tree-nodes">15</div></div>
+            <div class="stat"><div class="k">Yielded</div><div class="v" id="tree-gen">0</div></div>
+          </div>
+          <div id="tree-svg"></div>
+          <div class="mono-out" id="tree-list" style="margin-top:14px"></div>
+          <p class="hint"><b>Reading it:</b> depth-first, left-to-right. Every leaf is one complete test input; the walk order is exactly the order the generator yields them.</p>
+        </div>
+      </div>
+
+      <p>Here is that generator as a reusable function. It builds each sequence in place and yields on reaching full length — the shape is identical across languages, which is the whole point.</p>
+      <div class="codeblock" data-snippet="sequences"></div>
+      <div class="callout note"><span class="ic">i</span><p>Every standard library ships an iterative version — Python's <code>itertools.product</code>, and equivalents elsewhere — and you should use them in production. The recursive form is here because it makes the <em>structure</em> visible and generalizes directly to permutations and multisets.</p></div>
+      <div class="callout key"><span class="ic">★</span><p><strong>Why sequences and not just distinct orderings?</strong> Real bugs hide in <em>repeated</em> values (equal keys) and in <em>order</em> together. Sequences over a small alphabet exercise both at once — duplicates <em>and</em> arrangement — which is why they are the workhorse of finite-domain sort testing.</p></div>
+    </section>
+
+    <section id="permutations">
+      <h2><span class="num">05</span>All permutations, up to a maximum size</h2>
+      <p class="lead">When you care about ordering of <em>distinct</em> keys, enumerate all <strong>n!</strong> permutations of a fixed n-element set — for n up to a feasible maximum.</p>
+      <p>Permutations stress the comparator and the movement logic: reverse-sorted input, rotations, a single element carried across the array. They're the natural exhaustive test for the <em>arrangement</em> dimension. The generator is again backtracking — pick an unused element for each position via a <code>used[]</code> mask.</p>
+
+      <div class="lab">
+        <div class="lab-head"><span class="badge">LAB</span><h4>Recursive permutation generator</h4><span class="sub">n! orderings</span></div>
+        <div class="lab-body">
+          <div class="controls">
+            <div class="ctl"><label for="perm-n">Set size n · <span class="val" id="perm-n-v">4</span></label><input type="range" id="perm-n" min="1" max="7" value="4" aria-label="Set size n"></div>
+            <div class="ctl"><button class="btn primary" id="perm-play">▶ Animate</button></div>
+            <div class="ctl"><button class="btn" id="perm-reset">Reset</button></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat accent"><div class="k">Permutations n!</div><div class="v" id="perm-count">24</div></div>
+            <div class="stat"><div class="k">Yielded</div><div class="v" id="perm-gen">0</div></div>
+            <div class="stat" id="perm-warn-wrap" style="display:none"><div class="k">Feasibility</div><div class="v bad" style="font-size:14px" id="perm-warn">—</div></div>
+          </div>
+          <div id="perm-grid" style="display:flex;flex-wrap:wrap;gap:0"></div>
+        </div>
+      </div>
+
+      <div class="codeblock" data-snippet="permutations"></div>
+      <div class="callout warn"><span class="ic">!</span><p><strong>n! explodes fast.</strong> 8! = 40,320 · 10! ≈ 3.6M · 12! ≈ 4.8×10⁸. Exhaustive permutation testing is comfortable to about n = 8–9 and pushes to ~11 with a fast sort. Beyond that, switch to randomized inputs with shrinking (§10).</p></div>
+      <div class="callout key"><span class="ic">★</span><p><strong>Permutations never test duplicate handling.</strong> Every permutation of distinct keys has each key exactly once, so a sort that mishandles equal elements can pass <em>all</em> n! permutations and still be broken. To catch that class of bug you need repeated values — i.e. finite-alphabet sequences (§04). The live tester in §09 lets you watch this happen.</p></div>
+    </section>
+
+    <section id="multisets">
+      <h2><span class="num">06</span>Combinations with repetition (multisets)</h2>
+      <p class="lead">A third enumeration sits between sequences and permutations: the distinct <em>multisets</em> of size n over k symbols — "how many of each value," ignoring arrangement. There are <strong>C(n+k−1, k−1)</strong> of them.</p>
+      <p>Generate them as <strong>non-decreasing</strong> sequences: recurse with a start index that never moves backward, so <code>0,0,1</code> is produced but its rearrangements <code>0,1,0</code> and <code>1,0,0</code> are not. This is combinations-with-repetition, and it's far smaller than kⁿ.</p>
+      <div class="codeblock" data-snippet="multisets"></div>
+      <p>Multisets are useful in two ways. As <strong>canonical shapes</strong>: enumerate each multiset, then feed it plus a few of its permutations — a cheap way to cover "value distribution" without the full kⁿ. And as an <strong>exhaustive test in their own right</strong> — but only for sorts whose behavior is genuinely independent of input order.</p>
+      <div class="callout warn"><span class="ic">!</span><p><strong>Don't assume order-independence.</strong> Testing one representative per multiset silently assumes the sort treats all arrangements of the same values identically. Most real implementations don't — that's exactly where order-dependent bugs live. For a rigorous finite-domain proof, test <em>all</em> sequences (kⁿ). Reach for multisets when you want a smaller, complementary pass.</p></div>
+    </section>
+
+    <section id="metrics">
+      <h2><span class="num">07</span>How big is the test space?</h2>
+      <p class="lead">Exhaustive testing is only exhaustive if it finishes. These are the counts that decide how far you can push each strategy — explore them live.</p>
+      <p>The four enumerations grow at very different rates: <code>2ⁿ</code> (binary sequences), <code>kⁿ</code> (k-ary sequences), <code>n!</code> (permutations), and <code>C(n+k−1,k−1)</code> (multisets). A practical unit-test budget is roughly <strong>10⁷–10⁸</strong> inputs for a fast in-memory sort — enough to run in seconds on every commit. Use the calculator to find where each curve crosses that line.</p>
+
+      <div class="lab">
+        <div class="lab-head"><span class="badge">LAB</span><h4>Test-space calculator &amp; growth chart</h4><span class="sub">log scale</span></div>
+        <div class="lab-body">
+          <div class="controls">
+            <div class="ctl"><label for="m-k">Distinct values k · <span class="val" id="m-k-v">3</span></label><input type="range" id="m-k" min="2" max="10" value="3" aria-label="Distinct values k"></div>
+            <div class="ctl"><label for="m-n">Length / set size n · <span class="val" id="m-n-v">10</span></label><input type="range" id="m-n" min="1" max="16" value="10" aria-label="Length or set size n"></div>
+            <div class="ctl"><label for="m-budget">Budget (inputs)</label>
+              <select id="m-budget" aria-label="Test budget in number of inputs"><option value="1e6">1 million</option><option value="1e7" selected>10 million</option><option value="1e8">100 million</option><option value="1e9">1 billion</option></select>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><div class="k">Binary 2ⁿ</div><div class="v" id="m-bin">1,024</div></div>
+            <div class="stat accent"><div class="k">Sequences kⁿ</div><div class="v" id="m-seq">59,049</div></div>
+            <div class="stat"><div class="k">Permutations n!</div><div class="v" id="m-perm">3,628,800</div></div>
+            <div class="stat"><div class="k">Multisets</div><div class="v" id="m-multi">66</div></div>
+          </div>
+          <div id="m-chart"></div>
+          <div class="legend" id="m-legend"></div>
+          <div class="mono-out" id="m-verdict" role="status" aria-live="polite" style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <p>The takeaways are stable across budgets: <strong>binary sequences</strong> reach the largest lengths (2²⁴ ≈ 1.7×10⁷, so n up to ~24 at a 10M budget), <strong>ternary</strong> to roughly n = 15, and <strong>permutations</strong> stall around n = 10–11. This is the quantitative case for the 0–1 principle in §08: if you can legitimately reduce your test space to binary sequences, you buy an enormous amount of reachable length.</p>
+    </section>
+    <section id="zeroone">
+      <h2><span class="num">08</span>The 0–1 principle: reduce everything to binary</h2>
+      <p class="lead">One of the most useful results in sorting theory turns a huge test space into a tiny one — but only for a specific class of sorts, so read the scope carefully.</p>
+      <p><strong>Knuth's 0–1 principle.</strong> If a <em>sorting network</em> — a fixed, data-independent sequence of compare-exchange operations — correctly sorts every sequence of <strong>0s and 1s</strong>, then it correctly sorts sequences of <em>arbitrary</em> values. So to verify an n-wire network you test only <strong>2ⁿ</strong> binary inputs instead of n! permutations or kⁿ sequences.</p>
+      <p>The intuition: a network is <em>oblivious</em> — it performs the same comparisons regardless of the data. For any monotonic threshold function that maps values to 0/1, the network commutes with that mapping. If some input weren't sorted, thresholding just below the first out-of-order value produces a 0/1 input the network also fails — so testing all 0/1 inputs is enough.</p>
+      <p>Step a 4-wire network below, then verify all 16 binary inputs at once. Because it sorts all 16, the 0–1 principle guarantees it sorts every possible length-4 input, of any values.</p>
+
+      <div class="lab">
+        <div class="lab-head"><span class="badge">LAB</span><h4>4-input sorting network</h4><span class="sub">5 comparators · verify 2⁴ = 16 inputs</span></div>
+        <div class="lab-body">
+          <div class="controls">
+            <div class="ctl"><label>Input bits (click to flip)</label><div id="net-inputs" style="display:flex;gap:6px"></div></div>
+            <div class="ctl"><button class="btn primary" id="net-step">Step ▸</button></div>
+            <div class="ctl"><button class="btn" id="net-play">▶ Run</button></div>
+            <div class="ctl"><button class="btn" id="net-reset">Reset</button></div>
+            <div class="ctl"><button class="btn" id="net-all">✓ Verify all 16</button></div>
+          </div>
+          <div id="net-svg"></div>
+          <div class="mono-out" id="net-out" role="status" aria-live="polite" style="margin-top:12px"></div>
+          <p class="hint"><b>Comparators</b> point down: each puts the smaller value on the top wire, the larger below. A data-<em>independent</em> comparator order is what makes the 0–1 principle apply.</p>
+        </div>
+      </div>
+
+      <div class="callout warn"><span class="ic">!</span><p><strong>Scope.</strong> The 0–1 principle applies to sorting <em>networks</em> and any <em>data-independent</em> comparator sequence. It does <em>not</em> directly apply to data-dependent algorithms (quicksort, mergesort, timsort), whose comparison pattern changes with the values — a binary-only pass can miss bugs that only trigger on distinct keys. That said, binary inputs are so cheap that running them against any sort is still a high-value first pass; just don't treat it as a proof for data-dependent code.</p></div>
+    </section>
+
+    <section id="harness">
+      <h2><span class="num">09</span>The exhaustive harness — and a live counterexample finder</h2>
+      <p class="lead">Combine the oracle (§02) with a generator (§04–06) and you have a harness that proves a sort correct over a bounded space — and, when it isn't, hands you the smallest broken input.</p>
+      <p>The loop is simple: for each length from 0 up to <code>L</code>, for each generated input, assert <em>ordered</em> and <em>permutation</em>; on the first failure, report the input. Iterating by increasing length means the first counterexample you hit is a <strong>minimal-length</strong> one (§10).</p>
+      <div class="codeblock" data-snippet="harness"></div>
+
+      <p>Now run it. Below are one correct sort and three plausibly-buggy ones. Pick a bug, pick a strategy, and watch which combinations catch it. The lesson from §05 is here to see: the <strong>"drops duplicates"</strong> bug sails through <em>every permutation</em> yet dies instantly on <em>sequences</em>.</p>
+
+      <div class="lab">
+        <div class="lab-head"><span class="badge">LAB</span><h4>Live sort tester</h4><span class="sub">oracle × exhaustive inputs</span></div>
+        <div class="lab-body">
+          <div class="controls">
+            <div class="ctl"><label for="t-impl">Sort under test</label>
+              <select id="t-impl" aria-label="Sort implementation under test">
+                <option value="correct">✓ Correct (insertion sort)</option>
+                <option value="dedup">Bug: drops duplicate values</option>
+                <option value="offbyone">Bug: off-by-one (skips last)</option>
+                <option value="indices">Bug: returns 0…n−1 (always "sorted")</option>
+              </select>
+            </div>
+            <div class="ctl"><label id="t-strategy-lbl">Input strategy</label>
+              <div class="seg" id="t-strategy" role="group" aria-labelledby="t-strategy-lbl">
+                <button data-s="binary" class="active" aria-pressed="true">Binary 0/1</button>
+                <button data-s="seq" aria-pressed="false">Sequences k=3</button>
+                <button data-s="perm" aria-pressed="false">Permutations</button>
+              </div>
+            </div>
+            <div class="ctl"><label for="t-n">Max length n · <span class="val" id="t-n-v">6</span></label><input type="range" id="t-n" min="1" max="8" value="6" aria-label="Maximum length n"></div>
+            <div class="ctl"><button class="btn primary" id="t-run">▶ Run all inputs</button></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><div class="k">Inputs tested</div><div class="v" id="t-count">—</div></div>
+            <div class="stat" id="t-result-wrap"><div class="k">Result</div><div class="v" id="t-result">—</div></div>
+            <div class="stat"><div class="k">First failing length</div><div class="v" id="t-flen">—</div></div>
+          </div>
+          <div id="t-counter"></div>
+          <div class="mono-out" id="t-log" role="status" aria-live="polite" style="margin-top:12px">Choose a sort and strategy, then <b>Run</b>.</div>
+          <p class="hint"><b>Try this:</b> select <b>drops duplicate values</b>, run <b>Permutations</b> → all pass. Keep the bug, switch to <b>Sequences</b> or <b>Binary</b> → instant counterexample. That contrast is the whole argument for finite-alphabet testing.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="shrinking">
+      <h2><span class="num">10</span>Minimal counterexamples (shrinking)</h2>
+      <p class="lead">A failing input of length 3 teaches more than a failing input of length 300. Exhaustive-by-increasing-size gives minimality for free; randomized testing needs to shrink.</p>
+      <p>Because the harness enumerates length 0, then 1, then 2…, the <em>first</em> failure it reports already has minimal length. Among inputs of that length you can further prefer the lexicographically smallest, which the natural generation order gives you. That's a clean, human-readable witness — often something like <code>[1, 0, 0]</code>.</p>
+      <p>Randomized testing (which finds a big, messy failing input) needs an explicit <strong>shrink</strong>: repeatedly simplify the counterexample — drop an element, pull a value toward the minimum — keeping any change that still fails, until no single step helps. The result is a local minimum that's usually tiny. This is what Hypothesis/QuickCheck do automatically.</p>
+      <div class="codeblock" data-snippet="shrink"></div>
+      <div class="callout note"><span class="ic">i</span><p>Shrinking pairs naturally with the finite-domain mindset: values are already pulled toward a small alphabet, so the only axis left to minimize is length. A shrunk counterexample from a random run is frequently a case your exhaustive pass would have caught — confirmation that the two strategies reinforce each other.</p></div>
+    </section>
+
+    <section id="edge">
+      <h2><span class="num">11</span>Edge cases &amp; extra properties</h2>
+      <p class="lead">Exhaustive small-input testing subsumes most hand-written edge cases — but a few structural inputs and a few extra properties still deserve explicit checks.</p>
+      <h3>Always include these inputs</h3>
+      <p>Enumerating lengths from 0 upward already covers them, but assert them by name too, as documentation and as fast smoke tests: the <strong>empty</strong> list, a <strong>single</strong> element, <strong>two</strong> elements, <strong>all-equal</strong> values, <strong>already-sorted</strong>, and <strong>reverse-sorted</strong>. Also test large runs of duplicates and, for numeric sorts, boundary values (min/max, and for floats the tricky ones — negative zero, and a decision about <code>NaN</code>).</p>
+      <h3>Stability</h3>
+      <p>A sort is <strong>stable</strong> if equal keys keep their input order. Test it by sorting <code>(key, tag)</code> pairs on <code>key</code> only, where <code>tag</code> is the original index; the output tags within each equal-key group must be increasing. Finite alphabets make this exhaustive too: with keys from <code>{0,1,2}</code> and distinct tags, enumerate all sequences and verify group order.</p>
+      <h3>Comparator contract</h3>
+      <p>If your sort takes a custom comparator, a subtly wrong one (not antisymmetric or not transitive) can corrupt results or throw — real libraries detect this, e.g. timsort's <em>"comparison method violates its general contract."</em> When the key domain is finite, you can <strong>exhaustively verify the comparator itself</strong>: check antisymmetry and transitivity across all triples of values before trusting it.</p>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Property</th><th>Check</th><th>Catches</th></tr></thead>
+        <tbody>
+          <tr><td>Ordered</td><td><code>ys[i] ≤ ys[i+1]</code></td><td>Comparison / movement bugs</td></tr>
+          <tr><td>Permutation</td><td>Multiset equal to input</td><td>Dropped / duplicated / invented elements</td></tr>
+          <tr><td>Idempotent</td><td><code>sort(sort xs)=sort xs</code></td><td>Non-deterministic / state bugs</td></tr>
+          <tr><td>Stable</td><td>Tag order within equal keys</td><td>Unstable merges/partitions</td></tr>
+          <tr><td>Comparator valid</td><td>Antisymmetry + transitivity on all triples</td><td>Crashes, corruption from bad comparators</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <section id="recipe">
+      <h2><span class="num">12</span>A practical recipe</h2>
+      <p class="lead">Put it together into a suite that is deterministic where it can be, probabilistic where it must be, and minimal in what it asks you to maintain.</p>
+      <ol>
+        <li><strong>Write the oracle once.</strong> <code>is_sorted</code> + multiset equality, reused everywhere. Add idempotency and stability where relevant.</li>
+        <li><strong>Exhaust binary and ternary sequences</strong> up to the largest length your budget allows (§07) — typically n ≈ 20+ for binary, ≈ 15 for ternary. This is your deterministic core and catches duplicate-handling bugs.</li>
+        <li><strong>Exhaust all permutations</strong> up to n ≈ 8–10 for the ordering dimension.</li>
+        <li><strong>Randomize for scale</strong> — large lengths and wide value ranges — with automatic shrinking (§10) to keep failures readable.</li>
+        <li><strong>Pin named edge cases</strong> (§11) and any historical regressions as fixed examples.</li>
+        <li><strong>If the sort is a network / oblivious</strong>, use the 0–1 principle (§08): exhaust 2ⁿ binary inputs and you're done for that length.</li>
+      </ol>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Bug class</th><th>Caught by</th><th>Missed by</th></tr></thead>
+        <tbody>
+          <tr><td>Drops / duplicates equal keys</td><td>Sequences, binary (with repeats)</td><td class="pill-cell">Permutations of distinct keys</td></tr>
+          <tr><td>Off-by-one at boundary</td><td>Permutations, sequences</td><td>A few hand examples</td></tr>
+          <tr><td>Returns fixed "sorted" pattern</td><td>Permutation property (any strategy)</td><td>"Is it ordered?" only</td></tr>
+          <tr><td>Unstable on equal keys</td><td>Stability test with tags</td><td>Ordered + permutation alone</td></tr>
+          <tr><td>Bad custom comparator</td><td>Exhaustive comparator check</td><td>Value tests if comparator rarely ties</td></tr>
+          <tr><td>Only on large / random data</td><td>Randomized + shrinking</td><td>Small exhaustive alone</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout key"><span class="ic">★</span><p><strong>One sentence.</strong> Assert the two properties, enumerate every short input over a tiny alphabet, add permutations for order and randomness for scale — and let the finite value domain turn "test a sort" into "prove a sort, for all inputs that matter."</p></div>
+    </section>
+
+    <section id="reference">
+      <h2><span class="num">13</span>Reference &amp; further reading</h2>
+      <h3>Counts at a glance</h3>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>n</th><th class="num">2ⁿ</th><th class="num">3ⁿ</th><th class="num">n!</th><th class="num">multisets k=3</th></tr></thead>
+        <tbody>
+          <tr><td>4</td><td class="num">16</td><td class="num">81</td><td class="num">24</td><td class="num">15</td></tr>
+          <tr><td>6</td><td class="num">64</td><td class="num">729</td><td class="num">720</td><td class="num">28</td></tr>
+          <tr><td>8</td><td class="num">256</td><td class="num">6,561</td><td class="num">40,320</td><td class="num">45</td></tr>
+          <tr><td>10</td><td class="num">1,024</td><td class="num">59,049</td><td class="num">3,628,800</td><td class="num">66</td></tr>
+          <tr><td>12</td><td class="num">4,096</td><td class="num">531,441</td><td class="num">479,001,600</td><td class="num">91</td></tr>
+          <tr><td>15</td><td class="num">32,768</td><td class="num">14,348,907</td><td class="num">1.3×10¹²</td><td class="num">136</td></tr>
+          <tr><td>20</td><td class="num">1,048,576</td><td class="num">3.5×10⁹</td><td class="num">2.4×10¹⁸</td><td class="num">231</td></tr>
+          <tr><td>24</td><td class="num">16,777,216</td><td class="num">2.8×10¹¹</td><td class="num">6.2×10²³</td><td class="num">325</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="hint">Rule of thumb at a 10⁷-input budget: 2ⁿ feasible to n≈23, 3ⁿ to n≈15, n! to n≈10. Multisets (k=3) stay trivially small — <code>C(n+2,2)</code> — which is why they're only a supplement, not a proof.</p>
+      <h3>Sources &amp; deeper dives</h3>
+      <ul>
+        <li><strong>Knuth, <em>The Art of Computer Programming</em>, Vol. 3 §5.3.4</strong> — sorting networks and the 0–1 principle (the "zero-one principle").</li>
+        <li><strong>Claessen &amp; Hughes, "QuickCheck: A Lightweight Tool for Random Testing of Haskell Programs" (2000)</strong> — the property-based testing model and shrinking.</li>
+        <li><strong>Hypothesis</strong> (Python) and <strong>fast-check</strong> (JS/TS) — modern property-based testing libraries with built-in shrinking; good companions to the exhaustive pass here.</li>
+        <li><strong>"Proving Android, Java and Python sorting algorithm is broken" (de Gouw et al.)</strong> — a real TimSort correctness bug, and why the comparator contract matters (§11).</li>
+        <li><strong>Batcher's odd–even mergesort &amp; bitonic sort</strong> — classic sorting networks to test with the 0–1 principle.</li>
+      </ul>
+      <div class="foot">
+        <p>Single self-contained page — no external dependencies, no network calls. Everything runs locally in your browser: view source to lift any generator, oracle, or the highlighter. Use the language switcher up top to read every snippet in Python, JavaScript, TypeScript, Java, C++, Rust, or Go.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ============================ syntax highlighter ============================ */
+const LANGS = {
+  python:{name:"Python",ext:"py",line:["#"],block:[],str:['"""',"'''",'"',"'"],
+    kw:["def","return","for","in","if","elif","else","while","yield","from","import","class","lambda","and","or","not","with","as","pass","break","continue","assert","global","nonlocal","is","raise","try","except"],
+    ty:["None","True","False","range","len","list","dict","set","int","str","bool","enumerate","sorted","all","any","Counter"]},
+  javascript:{name:"JavaScript",ext:"js",line:["//"],block:[["/*","*/"]],str:['"',"'","`"],
+    kw:["function","return","for","of","in","if","else","while","let","const","var","new","class","yield","typeof","break","continue","export","import","default","do","switch","case","throw","try","catch","instanceof"],
+    ty:["true","false","null","undefined","this","Array","Map","Set","Object","Number","String","Boolean","console"]},
+  typescript:{name:"TypeScript",ext:"ts",line:["//"],block:[["/*","*/"]],str:['"',"'","`"],
+    kw:["function","return","for","of","in","if","else","while","let","const","var","new","class","yield","typeof","break","continue","export","import","default","do","switch","case","interface","type","readonly","public","private","extends","implements","throw","try","catch"],
+    ty:["true","false","null","undefined","this","number","string","boolean","void","Array","Map","Set","Object","T","U","K"]},
+  java:{name:"Java",ext:"java",line:["//"],block:[["/*","*/"]],str:['"',"'"],
+    kw:["public","private","protected","static","final","void","class","return","for","if","else","while","new","this","import","package","extends","implements","break","continue","throw","throws","try","catch","interface"],
+    ty:["int","boolean","long","double","char","true","false","null","var","List","ArrayList","Map","HashMap","Integer","String","Comparable"]},
+  cpp:{name:"C++",ext:"cpp",line:["//"],block:[["/*","*/"]],str:['"',"'"],
+    kw:["return","for","if","else","while","class","struct","template","typename","namespace","using","new","delete","const","constexpr","auto","public","private","break","continue","include","define"],
+    ty:["int","bool","void","size_t","std","vector","true","false","nullptr","char","long","double","unsigned"]},
+  rust:{name:"Rust",ext:"rs",line:["//"],block:[["/*","*/"]],str:['"'],
+    kw:["fn","let","mut","for","in","if","else","while","loop","match","return","struct","impl","pub","use","mod","move","ref","as","where","trait","enum"],
+    ty:["Vec","i32","i64","u32","usize","bool","Some","None","true","false","self","Self","String","str","Ord","Clone"]},
+  go:{name:"Go",ext:"go",line:["//"],block:[["/*","*/"]],str:['"',"`"],
+    kw:["func","return","for","range","if","else","var","const","type","struct","interface","package","import","go","defer","switch","case","break","continue","map"],
+    ty:["make","append","len","copy","bool","int","int64","string","true","false","nil","byte","rune"]}
+};
+function escHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function isW(c){return /[A-Za-z0-9_]/.test(c);}
+function isWStart(c){return /[A-Za-z_]/.test(c);}
+function highlight(code, langKey){
+  const L=LANGS[langKey]; if(!L) return escHtml(code);
+  const kw=new Set(L.kw), ty=new Set(L.ty);
+  const strs=L.str.slice().sort((a,b)=>b.length-a.length); // longest delimiter first
+  let i=0,out="",n=code.length;
+  while(i<n){
+    let m=false;
+    // block comments
+    for(const [o,c] of L.block){
+      if(code.startsWith(o,i)){let j=code.indexOf(c,i+o.length);j=(j<0?n:j+c.length);
+        out+='<span class="c">'+escHtml(code.slice(i,j))+"</span>";i=j;m=true;break;}
+    }
+    if(m)continue;
+    // line comments
+    for(const o of L.line){
+      if(code.startsWith(o,i)){let j=code.indexOf("\n",i);j=(j<0?n:j);
+        out+='<span class="c">'+escHtml(code.slice(i,j))+"</span>";i=j;m=true;break;}
+    }
+    if(m)continue;
+    // strings
+    for(const q of strs){
+      if(code.startsWith(q,i)){
+        let j=i+q.length;
+        while(j<n){
+          if(q.length===1&&code[j]==="\\"){j+=2;continue;}
+          if(code.startsWith(q,j)){j+=q.length;break;}
+          j++;
+        }
+        if(j>n)j=n;
+        out+='<span class="s">'+escHtml(code.slice(i,j))+"</span>";i=j;m=true;break;
+      }
+    }
+    if(m)continue;
+    const ch=code[i];
+    if(isWStart(ch)){
+      let j=i+1;while(j<n&&isW(code[j]))j++;
+      const w=code.slice(i,j);
+      let k=j;while(k<n&&code[k]===" ")k++;
+      if(kw.has(w))out+='<span class="k">'+escHtml(w)+"</span>";
+      else if(ty.has(w))out+='<span class="t">'+escHtml(w)+"</span>";
+      else if(code[k]==="(")out+='<span class="fn">'+escHtml(w)+"</span>";
+      else out+=escHtml(w);
+      i=j;continue;
+    }
+    if(/[0-9]/.test(ch)){
+      let j=i+1;while(j<n&&/[0-9a-fA-FxXbBoO_]/.test(code[j]))j++;
+      out+='<span class="n">'+escHtml(code.slice(i,j))+"</span>";i=j;continue;
+    }
+    out+=escHtml(ch);i++;
+  }
+  return out;
+}
+
+/* ============================ code block plumbing ============================ */
+let currentLang="python";
+function langAvailable(snip,lang){return SNIPPETS[snip]&&SNIPPETS[snip][lang];}
+function pickLangFor(snip){
+  if(langAvailable(snip,currentLang))return currentLang;
+  const order=["python","javascript","typescript","java","cpp","rust","go"];
+  return order.find(l=>langAvailable(snip,l))||"python";
+}
+function renderCodeblocks(){
+  document.querySelectorAll(".codeblock[data-snippet]").forEach(block=>{
+    const snip=block.dataset.snippet;
+    const lang=pickLangFor(snip);
+    const raw=(SNIPPETS[snip]&&SNIPPETS[snip][lang]||"").replace(/^\n+|\n+$/g,"");
+    if(!raw){block.setAttribute("data-empty","");block.innerHTML="";return;}
+    block.removeAttribute("data-empty");
+    const L=LANGS[lang];
+    block.innerHTML=
+      '<div class="code-head">'
+      +'<span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>'
+      +'<span class="lang">'+L.name+'</span>'
+      +'<span class="file">'+snip+"."+L.ext+'</span>'
+      +'<button class="copy">Copy</button></div>'
+      +"<pre><code>"+highlight(raw,lang)+"</code></pre>";
+    const btn=block.querySelector(".copy");
+    btn.addEventListener("click",()=>copyText(raw,btn));
+  });
+}
+function copyText(text,btn){
+  const done=()=>{btn.textContent="Copied ✓";btn.classList.add("ok");setTimeout(()=>{btn.textContent="Copy";btn.classList.remove("ok");},1400);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  }else fallbackCopy(text,done);
+}
+function fallbackCopy(text,done){
+  const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done();}catch(e){}document.body.removeChild(ta);
+}
+function setLang(lang){
+  currentLang=lang;
+  document.querySelectorAll("#langbar button").forEach(b=>{
+    const on=b.dataset.lang===lang;
+    b.classList.toggle("active",on);
+    b.setAttribute("aria-pressed",on?"true":"false");
+  });
+  try{localStorage.setItem("sortguide.lang",lang);}catch(e){}
+  renderCodeblocks();
+}
+
+/* ============================ code snippets ============================ */
+const SNIPPETS = {
+oracle:{
+python:`from collections import Counter
+
+def is_sorted(xs):
+    # Every adjacent pair is non-decreasing.
+    return all(xs[i] <= xs[i + 1] for i in range(len(xs) - 1))
+
+def is_permutation(xs, ys):
+    # Same elements with the same multiplicities (a multiset equality).
+    return Counter(xs) == Counter(ys)
+
+def is_correct_sort(sort, xs):
+    ys = sort(list(xs))
+    return is_sorted(ys) and is_permutation(xs, ys)`,
+javascript:`function isSorted(xs) {
+  // Every adjacent pair is non-decreasing.
+  for (let i = 0; i + 1 < xs.length; i++)
+    if (xs[i] > xs[i + 1]) return false;
+  return true;
+}
+
+function isPermutation(xs, ys) {
+  // Same elements with the same multiplicities (a multiset equality).
+  if (xs.length !== ys.length) return false;
+  const count = new Map();
+  for (const x of xs) count.set(x, (count.get(x) || 0) + 1);
+  for (const y of ys) {
+    const c = (count.get(y) || 0) - 1;
+    if (c < 0) return false;
+    count.set(y, c);
+  }
+  return true;
+}
+
+function isCorrectSort(sort, xs) {
+  const ys = sort(xs.slice());
+  return isSorted(ys) && isPermutation(xs, ys);
+}`,
+typescript:`function isSorted<T>(xs: T[]): boolean {
+  // Every adjacent pair is non-decreasing.
+  for (let i = 0; i + 1 < xs.length; i++)
+    if (xs[i] > xs[i + 1]) return false;
+  return true;
+}
+
+function isPermutation<T>(xs: T[], ys: T[]): boolean {
+  // Multiset equality: same elements, same multiplicities.
+  if (xs.length !== ys.length) return false;
+  const count = new Map<T, number>();
+  for (const x of xs) count.set(x, (count.get(x) ?? 0) + 1);
+  for (const y of ys) {
+    const c = (count.get(y) ?? 0) - 1;
+    if (c < 0) return false;
+    count.set(y, c);
+  }
+  return true;
+}
+
+type SortFn<T> = (xs: T[]) => T[];
+function isCorrectSort<T>(sort: SortFn<T>, xs: T[]): boolean {
+  const ys = sort(xs.slice());
+  return isSorted(ys) && isPermutation(xs, ys);
+}`,
+java:`import java.util.*;
+
+class SortOracle {
+    static boolean isSorted(int[] ys) {
+        // Every adjacent pair is non-decreasing.
+        for (int i = 0; i + 1 < ys.length; i++)
+            if (ys[i] > ys[i + 1]) return false;
+        return true;
+    }
+
+    static boolean isPermutation(int[] xs, int[] ys) {
+        // Multiset equality via a frequency map.
+        if (xs.length != ys.length) return false;
+        Map<Integer, Integer> count = new HashMap<>();
+        for (int x : xs) count.merge(x, 1, Integer::sum);
+        for (int y : ys) {
+            Integer c = count.get(y);
+            if (c == null) return false;
+            if (c == 1) count.remove(y); else count.put(y, c - 1);
+        }
+        return count.isEmpty();
+    }
+}`,
+cpp:`#include <vector>
+#include <unordered_map>
+using namespace std;
+
+bool is_sorted_seq(const vector<int>& ys) {
+    // Every adjacent pair is non-decreasing.
+    for (size_t i = 0; i + 1 < ys.size(); i++)
+        if (ys[i] > ys[i + 1]) return false;
+    return true;
+}
+
+bool is_permutation_seq(const vector<int>& xs, const vector<int>& ys) {
+    // Multiset equality via a frequency map.
+    if (xs.size() != ys.size()) return false;
+    unordered_map<int, int> count;
+    for (int x : xs) count[x]++;
+    for (int y : ys) if (--count[y] < 0) return false;
+    return true;
+}`,
+rust:`use std::collections::HashMap;
+
+fn is_sorted(ys: &[i32]) -> bool {
+    // Every adjacent pair is non-decreasing.
+    ys.windows(2).all(|w| w[0] <= w[1])
+}
+
+fn is_permutation(xs: &[i32], ys: &[i32]) -> bool {
+    // Multiset equality via a frequency map.
+    if xs.len() != ys.len() { return false; }
+    let mut count: HashMap<i32, i32> = HashMap::new();
+    for &x in xs { *count.entry(x).or_insert(0) += 1; }
+    for &y in ys { *count.entry(y).or_insert(0) -= 1; }
+    count.values().all(|&c| c == 0)
+}`,
+go:`package gen
+
+func IsSorted(ys []int) bool {
+    // Every adjacent pair is non-decreasing.
+    for i := 0; i+1 < len(ys); i++ {
+        if ys[i] > ys[i+1] {
+            return false
+        }
+    }
+    return true
+}
+
+func IsPermutation(xs, ys []int) bool {
+    // Multiset equality via a frequency map.
+    if len(xs) != len(ys) {
+        return false
+    }
+    count := map[int]int{}
+    for _, x := range xs {
+        count[x]++
+    }
+    for _, y := range ys {
+        count[y]--
+    }
+    for _, c := range count {
+        if c != 0 {
+            return false
+        }
+    }
+    return true
+}`
+},
+sequences:{
+python:`def sequences(alphabet, n):
+    """Yield every length-n sequence over 'alphabet' — k**n of them."""
+    current = []
+    def rec():
+        if len(current) == n:
+            yield list(current)
+            return
+        for sym in alphabet:
+            current.append(sym)
+            yield from rec()
+            current.pop()
+    yield from rec()
+
+# Library equivalent: itertools.product(alphabet, repeat=n)`,
+javascript:`function* sequences(alphabet, n) {
+  // Yield every length-n sequence over 'alphabet' — k**n of them.
+  const current = [];
+  function* rec() {
+    if (current.length === n) { yield current.slice(); return; }
+    for (const sym of alphabet) {
+      current.push(sym);
+      yield* rec();
+      current.pop();
+    }
+  }
+  yield* rec();
+}`,
+typescript:`function* sequences<T>(alphabet: T[], n: number): Generator<T[]> {
+  // Yield every length-n sequence over 'alphabet' — k**n of them.
+  const current: T[] = [];
+  function* rec(): Generator<T[]> {
+    if (current.length === n) { yield current.slice(); return; }
+    for (const sym of alphabet) {
+      current.push(sym);
+      yield* rec();
+      current.pop();
+    }
+  }
+  yield* rec();
+}`,
+java:`import java.util.*;
+
+class Sequences {
+    // All length-n sequences over 'alphabet' — k^n of them.
+    static List<int[]> sequences(int[] alphabet, int n) {
+        List<int[]> out = new ArrayList<>();
+        build(alphabet, n, 0, new int[n], out);
+        return out;
+    }
+    static void build(int[] a, int n, int pos, int[] cur, List<int[]> out) {
+        if (pos == n) { out.add(cur.clone()); return; }
+        for (int sym : a) {
+            cur[pos] = sym;
+            build(a, n, pos + 1, cur, out);
+        }
+    }
+}`,
+cpp:`#include <vector>
+#include <functional>
+using namespace std;
+
+// All length-n sequences over 'alphabet' — k^n of them.
+vector<vector<int>> sequences(const vector<int>& alphabet, int n) {
+    vector<vector<int>> out;
+    vector<int> cur;
+    function<void()> rec = [&]() {
+        if ((int)cur.size() == n) { out.push_back(cur); return; }
+        for (int sym : alphabet) {
+            cur.push_back(sym);
+            rec();
+            cur.pop_back();
+        }
+    };
+    rec();
+    return out;
+}`,
+rust:`// All length-n sequences over 'alphabet' — k^n of them.
+fn sequences(alphabet: &[i32], n: usize) -> Vec<Vec<i32>> {
+    let mut out = Vec::new();
+    let mut cur = Vec::new();
+    build(alphabet, n, &mut cur, &mut out);
+    out
+}
+fn build(a: &[i32], n: usize, cur: &mut Vec<i32>, out: &mut Vec<Vec<i32>>) {
+    if cur.len() == n { out.push(cur.clone()); return; }
+    for &sym in a {
+        cur.push(sym);
+        build(a, n, cur, out);
+        cur.pop();
+    }
+}`,
+go:`package gen
+
+// Sequences returns every length-n sequence over alphabet — k^n of them.
+func Sequences(alphabet []int, n int) [][]int {
+    var out [][]int
+    cur := make([]int, 0, n)
+    var rec func()
+    rec = func() {
+        if len(cur) == n {
+            cp := make([]int, n)
+            copy(cp, cur)
+            out = append(out, cp)
+            return
+        }
+        for _, sym := range alphabet {
+            cur = append(cur, sym)
+            rec()
+            cur = cur[:len(cur)-1]
+        }
+    }
+    rec()
+    return out
+}`
+},
+permutations:{
+python:`def permutations(items):
+    """Yield all n! orderings of the distinct elements in 'items'."""
+    n = len(items)
+    used = [False] * n
+    current = []
+    def rec():
+        if len(current) == n:
+            yield list(current)
+            return
+        for i in range(n):
+            if used[i]:
+                continue
+            used[i] = True
+            current.append(items[i])
+            yield from rec()
+            current.pop()
+            used[i] = False
+    yield from rec()`,
+javascript:`function* permutations(items) {
+  // Yield all n! orderings of the distinct elements in 'items'.
+  const n = items.length, used = new Array(n).fill(false), current = [];
+  function* rec() {
+    if (current.length === n) { yield current.slice(); return; }
+    for (let i = 0; i < n; i++) {
+      if (used[i]) continue;
+      used[i] = true; current.push(items[i]);
+      yield* rec();
+      current.pop(); used[i] = false;
+    }
+  }
+  yield* rec();
+}`,
+typescript:`function* permutations<T>(items: T[]): Generator<T[]> {
+  // Yield all n! orderings of the distinct elements in 'items'.
+  const n = items.length;
+  const used: boolean[] = new Array(n).fill(false);
+  const current: T[] = [];
+  function* rec(): Generator<T[]> {
+    if (current.length === n) { yield current.slice(); return; }
+    for (let i = 0; i < n; i++) {
+      if (used[i]) continue;
+      used[i] = true; current.push(items[i]);
+      yield* rec();
+      current.pop(); used[i] = false;
+    }
+  }
+  yield* rec();
+}`,
+java:`import java.util.*;
+
+class Permutations {
+    // All n! orderings of the distinct elements in 'items'.
+    static List<int[]> permutations(int[] items) {
+        List<int[]> out = new ArrayList<>();
+        rec(items, new boolean[items.length], new int[items.length], 0, out);
+        return out;
+    }
+    static void rec(int[] items, boolean[] used, int[] cur, int pos, List<int[]> out) {
+        if (pos == items.length) { out.add(cur.clone()); return; }
+        for (int i = 0; i < items.length; i++) {
+            if (used[i]) continue;
+            used[i] = true; cur[pos] = items[i];
+            rec(items, used, cur, pos + 1, out);
+            used[i] = false;
+        }
+    }
+}`,
+cpp:`#include <vector>
+#include <functional>
+using namespace std;
+
+// All n! orderings of the distinct elements in 'items'.
+vector<vector<int>> permutations(const vector<int>& items) {
+    int n = items.size();
+    vector<vector<int>> out;
+    vector<int> cur;
+    vector<bool> used(n, false);
+    function<void()> rec = [&]() {
+        if ((int)cur.size() == n) { out.push_back(cur); return; }
+        for (int i = 0; i < n; i++) {
+            if (used[i]) continue;
+            used[i] = true; cur.push_back(items[i]);
+            rec();
+            cur.pop_back(); used[i] = false;
+        }
+    };
+    rec();
+    return out;
+}`,
+rust:`// All n! orderings of the distinct elements in 'items'.
+fn permutations(items: &[i32]) -> Vec<Vec<i32>> {
+    let mut out = Vec::new();
+    let mut cur = Vec::new();
+    let mut used = vec![false; items.len()];
+    perm(items, &mut used, &mut cur, &mut out);
+    out
+}
+fn perm(items: &[i32], used: &mut Vec<bool>, cur: &mut Vec<i32>, out: &mut Vec<Vec<i32>>) {
+    if cur.len() == items.len() { out.push(cur.clone()); return; }
+    for i in 0..items.len() {
+        if used[i] { continue; }
+        used[i] = true; cur.push(items[i]);
+        perm(items, used, cur, out);
+        cur.pop(); used[i] = false;
+    }
+}`,
+go:`package gen
+
+// Permutations returns all n! orderings of the distinct elements in items.
+func Permutations(items []int) [][]int {
+    n := len(items)
+    var out [][]int
+    used := make([]bool, n)
+    cur := make([]int, 0, n)
+    var rec func()
+    rec = func() {
+        if len(cur) == n {
+            cp := make([]int, n)
+            copy(cp, cur)
+            out = append(out, cp)
+            return
+        }
+        for i := 0; i < n; i++ {
+            if used[i] {
+                continue
+            }
+            used[i] = true
+            cur = append(cur, items[i])
+            rec()
+            cur = cur[:len(cur)-1]
+            used[i] = false
+        }
+    }
+    rec()
+    return out
+}`
+},
+multisets:{
+python:`def multisets(alphabet, n):
+    """Yield non-decreasing length-n sequences: the C(n+k-1, k-1) multisets."""
+    current = []
+    def rec(start):
+        if len(current) == n:
+            yield list(current)
+            return
+        for i in range(start, len(alphabet)):
+            current.append(alphabet[i])
+            yield from rec(i)      # 'i', not 'i + 1', so values may repeat
+            current.pop()
+    yield from rec(0)`,
+javascript:`function* multisets(alphabet, n) {
+  // Non-decreasing length-n sequences: the C(n+k-1, k-1) multisets.
+  const current = [];
+  function* rec(start) {
+    if (current.length === n) { yield current.slice(); return; }
+    for (let i = start; i < alphabet.length; i++) {
+      current.push(alphabet[i]);
+      yield* rec(i);      // 'i', not 'i + 1', so values may repeat
+      current.pop();
+    }
+  }
+  yield* rec(0);
+}`,
+typescript:`function* multisets<T>(alphabet: T[], n: number): Generator<T[]> {
+  // Non-decreasing length-n sequences: the C(n+k-1, k-1) multisets.
+  const current: T[] = [];
+  function* rec(start: number): Generator<T[]> {
+    if (current.length === n) { yield current.slice(); return; }
+    for (let i = start; i < alphabet.length; i++) {
+      current.push(alphabet[i]);
+      yield* rec(i);      // 'i', not 'i + 1', so values may repeat
+      current.pop();
+    }
+  }
+  yield* rec(0);
+}`,
+java:`import java.util.*;
+
+class Multisets {
+    // Non-decreasing length-n sequences: the C(n+k-1, k-1) multisets.
+    static List<int[]> multisets(int[] alphabet, int n) {
+        List<int[]> out = new ArrayList<>();
+        rec(alphabet, n, 0, 0, new int[n], out);
+        return out;
+    }
+    static void rec(int[] a, int n, int pos, int start, int[] cur, List<int[]> out) {
+        if (pos == n) { out.add(cur.clone()); return; }
+        for (int i = start; i < a.length; i++) {
+            cur[pos] = a[i];
+            rec(a, n, pos + 1, i, cur, out);   // 'i', not 'i + 1': repeats allowed
+        }
+    }
+}`,
+cpp:`#include <vector>
+#include <functional>
+using namespace std;
+
+// Non-decreasing length-n sequences: the C(n+k-1, k-1) multisets.
+vector<vector<int>> multisets(const vector<int>& alphabet, int n) {
+    vector<vector<int>> out;
+    vector<int> cur;
+    function<void(int)> rec = [&](int start) {
+        if ((int)cur.size() == n) { out.push_back(cur); return; }
+        for (int i = start; i < (int)alphabet.size(); i++) {
+            cur.push_back(alphabet[i]);
+            rec(i);      // 'i', not 'i + 1', so values may repeat
+            cur.pop_back();
+        }
+    };
+    rec(0);
+    return out;
+}`,
+rust:`// Non-decreasing length-n sequences: the C(n+k-1, k-1) multisets.
+fn multisets(alphabet: &[i32], n: usize) -> Vec<Vec<i32>> {
+    let mut out = Vec::new();
+    let mut cur = Vec::new();
+    ms(alphabet, n, 0, &mut cur, &mut out);
+    out
+}
+fn ms(a: &[i32], n: usize, start: usize, cur: &mut Vec<i32>, out: &mut Vec<Vec<i32>>) {
+    if cur.len() == n { out.push(cur.clone()); return; }
+    for i in start..a.len() {
+        cur.push(a[i]);
+        ms(a, n, i, cur, out);      // 'i', not 'i + 1', so values may repeat
+        cur.pop();
+    }
+}`,
+go:`package gen
+
+// Multisets returns non-decreasing length-n sequences: the C(n+k-1, k-1) multisets.
+func Multisets(alphabet []int, n int) [][]int {
+    var out [][]int
+    cur := make([]int, 0, n)
+    var rec func(start int)
+    rec = func(start int) {
+        if len(cur) == n {
+            cp := make([]int, n)
+            copy(cp, cur)
+            out = append(out, cp)
+            return
+        }
+        for i := start; i < len(alphabet); i++ {
+            cur = append(cur, alphabet[i])
+            rec(i) // i, not i+1, so values may repeat
+            cur = cur[:len(cur)-1]
+        }
+    }
+    rec(0)
+    return out
+}`
+},
+harness:{
+python:`def test_sort_exhaustive(sort, alphabet, max_len):
+    """Prove 'sort' correct on every sequence over 'alphabet' up to max_len.
+    Returns the first failing input (minimal length), or None if all pass."""
+    for n in range(max_len + 1):
+        for seq in sequences(alphabet, n):
+            original = list(seq)
+            result = sort(list(seq))
+            if not (is_sorted(result) and is_permutation(original, result)):
+                return original          # smallest counterexample first
+    return None
+
+# assert test_sort_exhaustive(my_sort, [0, 1, 2], max_len=7) is None`,
+javascript:`function testSortExhaustive(sort, alphabet, maxLen) {
+  // Returns the first failing input (minimal length), or null if all pass.
+  for (let n = 0; n <= maxLen; n++) {
+    for (const seq of sequences(alphabet, n)) {
+      const original = seq.slice();
+      const result = sort(seq.slice());
+      if (!(isSorted(result) && isPermutation(original, result)))
+        return original;             // smallest counterexample first
+    }
+  }
+  return null;
+}
+// console.assert(testSortExhaustive(mySort, [0, 1, 2], 7) === null);`,
+typescript:`function testSortExhaustive<T>(
+  sort: SortFn<T>, alphabet: T[], maxLen: number,
+): T[] | null {
+  // Returns the first failing input (minimal length), or null if all pass.
+  for (let n = 0; n <= maxLen; n++) {
+    for (const seq of sequences(alphabet, n)) {
+      const original = seq.slice();
+      const result = sort(seq.slice());
+      if (!(isSorted(result) && isPermutation(original, result)))
+        return original;             // smallest counterexample first
+    }
+  }
+  return null;
+}`,
+java:`import java.util.*;
+import java.util.function.UnaryOperator;
+
+class Harness {
+    // Returns the first failing input (minimal length), or null if all pass.
+    static int[] testSortExhaustive(UnaryOperator<int[]> sort, int[] alphabet, int maxLen) {
+        for (int n = 0; n <= maxLen; n++) {
+            for (int[] seq : Sequences.sequences(alphabet, n)) {
+                int[] original = seq.clone();
+                int[] result = sort.apply(seq.clone());
+                if (!(SortOracle.isSorted(result)
+                      && SortOracle.isPermutation(original, result)))
+                    return original;         // smallest counterexample first
+            }
+        }
+        return null;
+    }
+}`,
+cpp:`#include <vector>
+#include <functional>
+#include <optional>
+using namespace std;
+
+// Returns the first failing input (minimal length), or nullopt if all pass.
+optional<vector<int>> test_sort_exhaustive(
+        function<vector<int>(vector<int>)> sort,
+        const vector<int>& alphabet, int max_len) {
+    for (int n = 0; n <= max_len; n++) {
+        for (auto& seq : sequences(alphabet, n)) {
+            vector<int> original = seq;
+            vector<int> result = sort(seq);
+            if (!(is_sorted_seq(result) && is_permutation_seq(original, result)))
+                return original;             // smallest counterexample first
+        }
+    }
+    return nullopt;
+}`,
+rust:`// Returns the first failing input (minimal length), or None if all pass.
+fn test_sort_exhaustive(
+    sort: impl Fn(Vec<i32>) -> Vec<i32>,
+    alphabet: &[i32], max_len: usize,
+) -> Option<Vec<i32>> {
+    for n in 0..=max_len {
+        for seq in sequences(alphabet, n) {
+            let original = seq.clone();
+            let result = sort(seq);
+            if !(is_sorted(&result) && is_permutation(&original, &result)) {
+                return Some(original);       // smallest counterexample first
+            }
+        }
+    }
+    None
+}`,
+go:`package gen
+
+// TestSortExhaustive returns the first failing input (minimal length), or nil if all pass.
+func TestSortExhaustive(sort func([]int) []int, alphabet []int, maxLen int) []int {
+    for n := 0; n <= maxLen; n++ {
+        for _, seq := range Sequences(alphabet, n) {
+            original := make([]int, len(seq))
+            copy(original, seq)
+            result := sort(append([]int{}, seq...))
+            if !(IsSorted(result) && IsPermutation(original, result)) {
+                return original // smallest counterexample first
+            }
+        }
+    }
+    return nil
+}`
+},
+shrink:{
+python:`def shrink(sort, xs):
+    """Reduce a failing input to a local minimum that still fails the oracle."""
+    def fails(candidate):
+        out = sort(list(candidate))
+        return not (is_sorted(out) and is_permutation(candidate, out))
+
+    xs = list(xs)
+    changed = True
+    while changed:
+        changed = False
+        for i in range(len(xs)):                 # 1) try removing each element
+            smaller = xs[:i] + xs[i + 1:]
+            if fails(smaller):
+                xs = smaller; changed = True; break
+        if changed:
+            continue
+        lo = min(xs)
+        for i in range(len(xs)):                 # 2) pull each value toward min
+            if xs[i] > lo:
+                pulled = list(xs); pulled[i] = lo
+                if fails(pulled):
+                    xs = pulled; changed = True; break
+    return xs`,
+javascript:`function shrink(sort, xs) {
+  // Reduce a failing input to a local minimum that still fails the oracle.
+  const fails = (c) => {
+    const out = sort(c.slice());
+    return !(isSorted(out) && isPermutation(c, out));
+  };
+  xs = xs.slice();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < xs.length; i++) {          // remove an element
+      const smaller = xs.slice(0, i).concat(xs.slice(i + 1));
+      if (fails(smaller)) { xs = smaller; changed = true; break; }
+    }
+    if (changed) continue;
+    const lo = Math.min(...xs);
+    for (let i = 0; i < xs.length; i++) {          // pull a value down
+      if (xs[i] > lo) {
+        const pulled = xs.slice(); pulled[i] = lo;
+        if (fails(pulled)) { xs = pulled; changed = true; break; }
+      }
+    }
+  }
+  return xs;
+}`,
+typescript:`function shrink<T>(sort: SortFn<number>, xs: number[]): number[] {
+  // Reduce a failing input to a local minimum that still fails the oracle.
+  const fails = (c: number[]): boolean => {
+    const out = sort(c.slice());
+    return !(isSorted(out) && isPermutation(c, out));
+  };
+  xs = xs.slice();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < xs.length; i++) {          // remove an element
+      const smaller = xs.slice(0, i).concat(xs.slice(i + 1));
+      if (fails(smaller)) { xs = smaller; changed = true; break; }
+    }
+    if (changed) continue;
+    const lo = Math.min(...xs);
+    for (let i = 0; i < xs.length; i++) {          // pull a value down
+      if (xs[i] > lo) {
+        const pulled = xs.slice(); pulled[i] = lo;
+        if (fails(pulled)) { xs = pulled; changed = true; break; }
+      }
+    }
+  }
+  return xs;
+}`,
+java:`import java.util.*;
+import java.util.function.UnaryOperator;
+
+class Shrink {
+    // Reduce a failing input to a local minimum that still fails the oracle.
+    static int[] shrink(UnaryOperator<int[]> sort, int[] xs) {
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (int i = 0; i < xs.length; i++) {         // remove an element
+                int[] smaller = removeAt(xs, i);
+                if (fails(sort, smaller)) { xs = smaller; changed = true; break; }
+            }
+            if (changed) continue;
+            int lo = Arrays.stream(xs).min().orElse(0);
+            for (int i = 0; i < xs.length; i++) {         // pull a value down
+                if (xs[i] > lo) {
+                    int[] pulled = xs.clone(); pulled[i] = lo;
+                    if (fails(sort, pulled)) { xs = pulled; changed = true; break; }
+                }
+            }
+        }
+        return xs;
+    }
+    static boolean fails(UnaryOperator<int[]> sort, int[] c) {
+        int[] out = sort.apply(c.clone());
+        return !(SortOracle.isSorted(out) && SortOracle.isPermutation(c, out));
+    }
+    static int[] removeAt(int[] a, int idx) {
+        int[] r = new int[a.length - 1];
+        for (int i = 0, j = 0; i < a.length; i++) if (i != idx) r[j++] = a[i];
+        return r;
+    }
+}`,
+cpp:`#include <vector>
+#include <functional>
+#include <algorithm>
+using namespace std;
+
+// Reduce a failing input to a local minimum that still fails the oracle.
+vector<int> shrink(function<vector<int>(vector<int>)> sort, vector<int> xs) {
+    auto fails = [&](const vector<int>& c) {
+        vector<int> out = sort(c);
+        return !(is_sorted_seq(out) && is_permutation_seq(c, out));
+    };
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (size_t i = 0; i < xs.size(); i++) {          // remove an element
+            vector<int> smaller = xs;
+            smaller.erase(smaller.begin() + i);
+            if (fails(smaller)) { xs = smaller; changed = true; break; }
+        }
+        if (changed) continue;
+        int lo = *min_element(xs.begin(), xs.end());
+        for (size_t i = 0; i < xs.size(); i++) {          // pull a value down
+            if (xs[i] > lo) {
+                vector<int> pulled = xs; pulled[i] = lo;
+                if (fails(pulled)) { xs = pulled; changed = true; break; }
+            }
+        }
+    }
+    return xs;
+}`,
+rust:`// Reduce a failing input to a local minimum that still fails the oracle.
+fn shrink(sort: impl Fn(Vec<i32>) -> Vec<i32>, mut xs: Vec<i32>) -> Vec<i32> {
+    let fails = |c: &Vec<i32>| {
+        let out = sort(c.clone());
+        !(is_sorted(&out) && is_permutation(c, &out))
+    };
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for i in 0..xs.len() {                    // remove an element
+            let mut smaller = xs.clone();
+            smaller.remove(i);
+            if fails(&smaller) { xs = smaller; changed = true; break; }
+        }
+        if changed { continue; }
+        let lo = *xs.iter().min().unwrap();
+        for i in 0..xs.len() {                     // pull a value down
+            if xs[i] > lo {
+                let mut pulled = xs.clone();
+                pulled[i] = lo;
+                if fails(&pulled) { xs = pulled; changed = true; break; }
+            }
+        }
+    }
+    xs
+}`,
+go:`package gen
+
+// Shrink reduces a failing input to a local minimum that still fails the oracle.
+func Shrink(sort func([]int) []int, xs []int) []int {
+    fails := func(c []int) bool {
+        out := sort(append([]int{}, c...))
+        return !(IsSorted(out) && IsPermutation(c, out))
+    }
+    changed := true
+    for changed {
+        changed = false
+        for i := 0; i < len(xs); i++ { // remove an element
+            smaller := append(append([]int{}, xs[:i]...), xs[i+1:]...)
+            if fails(smaller) {
+                xs = smaller
+                changed = true
+                break
+            }
+        }
+        if changed {
+            continue
+        }
+        lo := xs[0]
+        for _, v := range xs {
+            if v < lo {
+                lo = v
+            }
+        }
+        for i := 0; i < len(xs); i++ { // pull a value down
+            if xs[i] > lo {
+                pulled := append([]int{}, xs...)
+                pulled[i] = lo
+                if fails(pulled) {
+                    xs = pulled
+                    changed = true
+                    break
+                }
+            }
+        }
+    }
+    return xs
+}`
+}
+};
+
+/* ============================ shared helpers ============================ */
+const $=id=>document.getElementById(id);
+const SUP={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+const sup=s=>String(s).split("").map(c=>SUP[c]||c).join("");
+const PALETTE=["#4f46e5","#0d9488","#e11d48","#f59e0b","#7c3aed","#0891b2","#ca8a04","#db2777"];
+const valColor=v=>PALETTE[((v%PALETTE.length)+PALETTE.length)%PALETTE.length];
+function fmtCount(x){
+  if(!isFinite(x))return "∞";
+  if(x<1e9)return Math.round(x).toLocaleString("en-US");
+  const e=Math.floor(Math.log10(x)),m=x/Math.pow(10,e);
+  return m.toFixed(2)+"×10"+sup(e);
+}
+function fact(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+function multisetCount(n,k){const b=k-1;let r=1;for(let i=1;i<=b;i++)r=r*(n+i)/i;return Math.round(r);}
+function genSequences(alpha,len){const out=[],cur=[];(function rec(){if(cur.length===len){out.push(cur.slice());return;}for(const s of alpha){cur.push(s);rec();cur.pop();}})();return out;}
+function genPerms(arr){const out=[],n=arr.length,used=Array(n).fill(false),cur=[];(function rec(){if(cur.length===n){out.push(cur.slice());return;}for(let i=0;i<n;i++){if(used[i])continue;used[i]=true;cur.push(arr[i]);rec();cur.pop();used[i]=false;}})();return out;}
+function oSorted(a){for(let i=0;i+1<a.length;i++)if(a[i]>a[i+1])return false;return true;}
+function oPerm(a,b){if(a.length!==b.length)return false;const m=new Map();for(const x of a)m.set(x,(m.get(x)||0)+1);for(const y of b){const c=(m.get(y)||0)-1;if(c<0)return false;m.set(y,c);}return true;}
+
+const reduceMotion=()=>!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+function injectDynCss(){
+  const s=document.createElement("style");
+  s.textContent=`
+  .tedge{stroke:#cbd5e6;stroke-width:1.5;transition:.12s}
+  .tedge.on{stroke:#0f1729;stroke-width:2.6}
+  .tnode{stroke:#fff;stroke-width:2;transition:.12s}
+  .tnode.on{stroke:#0f1729;stroke-width:2.6}
+  .tlabel{font-family:var(--mono);font-weight:700;fill:#fff;pointer-events:none}
+  .netwire{stroke:#c7d0e0;stroke-width:3}
+  .netcmp{stroke:#475569;stroke-width:3;transition:.12s}
+  .netcmp.act{stroke:#e11d48;stroke-width:4}
+  .netcmp circle{fill:#475569;transition:.12s}
+  .netcmp.act circle{fill:#e11d48}
+  .chip-btn{cursor:pointer;user-select:none}
+  .gline{stroke:#e7ecf4;stroke-width:1}
+  .glabel{font:11px var(--mono);fill:#5c6472}
+  .axlabel{font:11px var(--sans);fill:#5c6472}
+  .serieslabel{font:700 11px var(--mono)}
+  .chip-btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}`;
+  document.head.appendChild(s);
+}
+
+/* ============================ 1 · sequence recursion tree ============================ */
+let treeTimer=null;
+function buildTree(k,n){
+  const nodes=[];let leafIx=0;
+  function rec(path,depth,parent){
+    const idx=nodes.length;
+    const node={idx,depth,parent,path:path.slice(),leaf:depth===n,x:0,kids:[]};
+    nodes.push(node);
+    if(depth===n){node.x=leafIx++;}
+    else{for(let s=0;s<k;s++)node.kids.push(rec(path.concat(s),depth+1,idx));
+      node.x=(nodes[node.kids[0]].x+nodes[node.kids[node.kids.length-1]].x)/2;}
+    return idx;
+  }
+  rec([],0,-1);
+  const leaves=nodes.filter(n0=>n0.leaf);
+  return {nodes,leaves};
+}
+function renderTree(){
+  if(treeTimer){clearInterval(treeTimer);treeTimer=null;}
+  const k=+$("tree-k").value,n=+$("tree-n").value;
+  $("tree-k-v").textContent=k;$("tree-n-v").textContent=n;
+  const {nodes,leaves}=buildTree(k,n);
+  const total=Math.pow(k,n);
+  $("tree-count").textContent=fmtCount(total);
+  $("tree-nodes").textContent=fmtCount(nodes.length);
+  $("tree-gen").textContent=fmtCount(total);
+  const ls=Math.max(24,Math.min(70,600/leaves.length));
+  const r=Math.max(9,Math.min(15,ls/2-2));
+  const mx=30,my=26,levelH=Math.max(52,Math.min(74,300/n));
+  const W=Math.max(320,leaves.length*ls+mx*2), H=my*2+n*levelH+22;
+  const px=nd=>mx+nd.x*ls+ls/2, py=nd=>my+nd.depth*levelH;
+  let edges="",circ="";
+  for(const nd of nodes){
+    if(nd.parent>=0){const p=nodes[nd.parent];
+      edges+=`<line class="tedge" data-n="${nd.idx}" x1="${px(p).toFixed(1)}" y1="${py(p)}" x2="${px(nd).toFixed(1)}" y2="${py(nd)}"/>`;}
+  }
+  for(const nd of nodes){
+    const cx=px(nd).toFixed(1),cy=py(nd);
+    const fill=nd.depth===0?"#94a3b8":valColor(nd.path[nd.path.length-1]);
+    circ+=`<circle class="tnode" data-n="${nd.idx}" cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
+    const lab=nd.depth===0?"∅":String(nd.path[nd.path.length-1]);
+    circ+=`<text class="tlabel" x="${cx}" y="${cy+r*0.35}" font-size="${(r*0.95).toFixed(0)}" text-anchor="middle">${lab}</text>`;
+  }
+  $("tree-svg").innerHTML=`<div style="overflow:auto"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="min-width:100%">${edges}${circ}</svg></div>`;
+  renderTreeList(leaves,leaves.length);
+}
+function renderTreeList(leaves,upTo){
+  let html="";
+  for(let i=0;i<upTo;i++){
+    const seq=leaves[i].path;
+    html+=`<span class="seq-chip">`+seq.map(v=>`<b style="background:${valColor(v)}22;color:${valColor(v)}">${v}</b>`).join("")+`</span>`;
+  }
+  $("tree-list").innerHTML=html;
+}
+function animateTree(){
+  if(treeTimer){clearInterval(treeTimer);treeTimer=null;}
+  if(reduceMotion()){renderTree();return;}   // respect prefers-reduced-motion: show final state
+  const k=+$("tree-k").value,n=+$("tree-n").value;
+  const {leaves}=buildTree(k,n);
+  document.querySelectorAll("#tree-svg .tnode,#tree-svg .tedge").forEach(e=>e.classList.remove("on"));
+  $("tree-list").innerHTML="";$("tree-gen").textContent="0";
+  let i=0;
+  const speed=Math.max(90,Math.min(420,2600/leaves.length));
+  treeTimer=setInterval(()=>{
+    if(i>=leaves.length){clearInterval(treeTimer);treeTimer=null;return;}
+    document.querySelectorAll("#tree-svg .on").forEach(e=>e.classList.remove("on"));
+    // highlight path root->leaf
+    let cur=leaves[i].idx;
+    const {nodes}=buildTree(k,n); // rebuild for parent chain (cheap)
+    while(cur>=0){const c=document.querySelector(`#tree-svg .tnode[data-n="${cur}"]`);if(c)c.classList.add("on");
+      const e=document.querySelector(`#tree-svg .tedge[data-n="${cur}"]`);if(e)e.classList.add("on");cur=nodes[cur].parent;}
+    renderTreeList(leaves,i+1);
+    $("tree-gen").textContent=String(i+1);
+    $("tree-list").scrollTop=$("tree-list").scrollHeight;
+    i++;
+  },speed);
+}
+function initTree(){
+  $("tree-k").max=3;if(+$("tree-k").value>3)$("tree-k").value=3;
+  $("tree-k").addEventListener("input",renderTree);
+  $("tree-n").addEventListener("input",renderTree);
+  $("tree-play").addEventListener("click",animateTree);
+  $("tree-reset").addEventListener("click",renderTree);
+  renderTree();
+}
+
+/* ============================ 2 · permutation generator ============================ */
+let permTimer=null;
+const PERM_CAP=720;
+function permChips(perms,upTo){
+  let html="";
+  for(let i=0;i<upTo;i++){
+    html+=`<span class="seq-chip">`+perms[i].map(v=>`<b style="background:${valColor(v-1)}22;color:${valColor(v-1)}">${v}</b>`).join("")+`</span>`;
+  }
+  return html;
+}
+function renderPerm(){
+  if(permTimer){clearInterval(permTimer);permTimer=null;}
+  const n=+$("perm-n").value;$("perm-n-v").textContent=n;
+  const total=fact(n);
+  $("perm-count").textContent=fmtCount(total);
+  $("perm-gen").textContent=fmtCount(total);
+  const items=Array.from({length:n},(_,i)=>i+1);
+  const perms=genPerms(items);
+  const shown=Math.min(perms.length,PERM_CAP);
+  $("perm-grid").innerHTML=permChips(perms,shown)+(perms.length>shown?`<span class="hint" style="align-self:center;margin-left:8px">…and ${fmtCount(perms.length-shown)} more</span>`:"");
+  const w=$("perm-warn-wrap");
+  if(total>PERM_CAP){w.style.display="";$("perm-warn").textContent="showing first "+PERM_CAP;}else w.style.display="none";
+}
+function animatePerm(){
+  if(permTimer){clearInterval(permTimer);permTimer=null;}
+  if(reduceMotion()){renderPerm();return;}   // respect prefers-reduced-motion
+  const n=+$("perm-n").value;
+  const items=Array.from({length:n},(_,i)=>i+1);
+  const perms=genPerms(items);
+  const shown=Math.min(perms.length,PERM_CAP);
+  $("perm-grid").innerHTML="";$("perm-gen").textContent="0";
+  let i=0;const speed=Math.max(24,Math.min(260,1500/shown));
+  permTimer=setInterval(()=>{
+    if(i>=shown){clearInterval(permTimer);permTimer=null;
+      if(perms.length>shown)$("perm-grid").insertAdjacentHTML("beforeend",`<span class="hint" style="align-self:center;margin-left:8px">…and ${fmtCount(perms.length-shown)} more</span>`);
+      $("perm-gen").textContent=fmtCount(fact(n));return;}
+    $("perm-grid").insertAdjacentHTML("beforeend",permChips(perms,i+1).slice(permChips(perms,i).length));
+    $("perm-gen").textContent=String(i+1);i++;
+  },speed);
+}
+function initPerm(){
+  $("perm-n").addEventListener("input",renderPerm);
+  $("perm-play").addEventListener("click",animatePerm);
+  $("perm-reset").addEventListener("click",renderPerm);
+  renderPerm();
+}
+
+/* ============================ 3 · metrics calculator + chart ============================ */
+function maxLenWithin(fn,budget){let L=0;for(let i=1;i<=200;i++){if(fn(i)<=budget)L=i;else if(i>4&&fn(i)>budget)break;}return L;}
+function renderMetrics(){
+  const k=+$("m-k").value,n=+$("m-n").value,B=+$("m-budget").value;
+  $("m-k-v").textContent=k;$("m-n-v").textContent=n;
+  const fBin=L=>Math.pow(2,L),fSeq=L=>Math.pow(k,L),fPerm=L=>fact(L),fMul=L=>multisetCount(L,k);
+  $("m-bin").textContent=fmtCount(fBin(n));
+  $("m-seq").textContent=fmtCount(fSeq(n));
+  $("m-perm").textContent=fmtCount(fPerm(n));
+  $("m-multi").textContent=fmtCount(fMul(n));
+  // chart — every series is encoded THREE ways (colour + dash + marker shape) plus a
+  // direct end-label, so it stays readable for colour-vision deficiency and in grayscale.
+  const series=[
+    {c:"#475569",f:fBin,name:"2ⁿ binary",tag:"2ⁿ",dash:"2 3",shape:"circle"},
+    {c:"#4f46e5",f:fSeq,name:"kⁿ sequences",tag:"kⁿ",dash:"",shape:"square"},
+    {c:"#e11d48",f:fPerm,name:"n! permutations",tag:"n!",dash:"9 4",shape:"triangle"},
+    {c:"#0d9488",f:fMul,name:"multisets",tag:"mset",dash:"2 5",shape:"diamond"}
+  ];
+  const BUDGET_C="#b45309";
+  const marker=(shape,x,y,c)=>{const r=3.4,X=x.toFixed(1),Y=y.toFixed(1);
+    if(shape==="square")return `<rect x="${(x-r).toFixed(1)}" y="${(y-r).toFixed(1)}" width="${2*r}" height="${2*r}" fill="${c}"/>`;
+    if(shape==="triangle")return `<polygon points="${X},${(y-r-1).toFixed(1)} ${(x-r-1).toFixed(1)},${(y+r).toFixed(1)} ${(x+r+1).toFixed(1)},${(y+r).toFixed(1)}" fill="${c}"/>`;
+    if(shape==="diamond")return `<polygon points="${X},${(y-r-1).toFixed(1)} ${(x+r+1).toFixed(1)},${Y} ${X},${(y+r+1).toFixed(1)} ${(x-r-1).toFixed(1)},${Y}" fill="${c}"/>`;
+    return `<circle cx="${X}" cy="${Y}" r="${r}" fill="${c}"/>`;};
+  const W=660,H=300,padL=48,padR=52,padT=16,padB=30;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  let maxLog=Math.log10(B);
+  for(const s of series)for(let L=1;L<=n;L++){const v=s.f(L);if(v>0)maxLog=Math.max(maxLog,Math.log10(v));}
+  maxLog=Math.max(1,Math.ceil(maxLog));
+  const X=L=>padL+(n<=1?plotW/2:(L-1)/(n-1)*plotW);
+  const Y=v=>{const lg=v>1?Math.log10(v):0;return padT+plotH*(1-lg/maxLog);};
+  let grid="";
+  for(let p=0;p<=maxLog;p++){const y=padT+plotH*(1-p/maxLog);
+    grid+=`<line class="gline" x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}"/>`;
+    grid+=`<text class="glabel" x="${padL-6}" y="${(y+3).toFixed(1)}" text-anchor="end">10${sup(p)}</text>`;}
+  let xlabels="";
+  const step=n<=10?1:2;
+  for(let L=1;L<=n;L+=step)xlabels+=`<text class="axlabel" x="${X(L).toFixed(1)}" y="${H-10}" text-anchor="middle">${L}</text>`;
+  const yB=Y(B);
+  const budget=`<line x1="${padL}" y1="${yB.toFixed(1)}" x2="${W-padR}" y2="${yB.toFixed(1)}" stroke="${BUDGET_C}" stroke-width="2" stroke-dasharray="6 4"/>`;
+  let lines="";
+  for(const s of series){
+    const pts=[];
+    for(let L=1;L<=n;L++){const v=s.f(L);if(isFinite(v))pts.push([X(L),Y(v)]);}
+    lines+=`<polyline points="${pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")}" fill="none" stroke="${s.c}" stroke-width="2.4" stroke-dasharray="${s.dash}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    for(const p of pts)lines+=marker(s.shape,p[0],p[1],s.c);
+    if(pts.length){const last=pts[pts.length-1];lines+=`<text class="serieslabel" x="${(last[0]+7).toFixed(1)}" y="${(last[1]+3.5).toFixed(1)}" fill="${s.c}">${s.tag}</text>`;}
+  }
+  $("m-chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px" role="img" aria-label="Log-scale growth of test-space size by input length: 2ⁿ binary, kⁿ sequences, n! permutations and multisets, with the budget line">${grid}${budget}${lines}${xlabels}<text class="axlabel" x="${padL}" y="12" font-weight="600">inputs (log scale)</text></svg>`;
+  $("m-legend").innerHTML=series.map(s=>`<span><svg width="28" height="12" aria-hidden="true" style="vertical-align:middle"><line x1="1" y1="6" x2="27" y2="6" stroke="${s.c}" stroke-width="2.4" stroke-dasharray="${s.dash}"/>${marker(s.shape,14,6,s.c)}</svg> ${s.name}</span>`).join("")
+    +`<span><svg width="28" height="12" aria-hidden="true" style="vertical-align:middle"><line x1="1" y1="6" x2="27" y2="6" stroke="${BUDGET_C}" stroke-width="2" stroke-dasharray="6 4"/></svg> budget line</span>`;
+  // verdict
+  const bl=fmtCount(B);
+  const rows=[
+    ["Binary 2ⁿ",maxLenWithin(fBin,B)],
+    ["Sequences kⁿ (k="+k+")",maxLenWithin(fSeq,B)],
+    ["Permutations n!",maxLenWithin(fPerm,B)],
+    ["Multisets (k="+k+")",maxLenWithin(fMul,B)]
+  ];
+  $("m-verdict").innerHTML=`<b>Largest length that fits a ${bl}-input budget:</b><br>`+
+    rows.map(([nm,L])=>`&nbsp;• ${nm}: <b style="color:var(--ink)">n ≤ ${L>=200?"200+":L}</b>`).join("<br>");
+}
+function initMetrics(){
+  ["m-k","m-n"].forEach(id=>$(id).addEventListener("input",renderMetrics));
+  $("m-budget").addEventListener("change",renderMetrics);
+  renderMetrics();
+}
+
+/* ============================ 4 · sorting network (0–1 principle) ============================ */
+const NET_COMPS=[[0,1],[2,3],[0,2],[1,3],[1,2]];
+let netBits=[1,0,1,0],netStep=0,netVals=[1,0,1,0],netTimer=null;
+function applyNetwork(vals){vals=vals.slice();for(const [a,b] of NET_COMPS)if(vals[a]>vals[b]){const t=vals[a];vals[a]=vals[b];vals[b]=t;}return vals;}
+function netValsAtStep(bits,step){let v=bits.slice();for(let i=0;i<step;i++){const [a,b]=NET_COMPS[i];if(v[a]>v[b]){const t=v[a];v[a]=v[b];v[b]=t;}}return v;}
+function renderNetwork(){
+  const wy=[42,86,130,174],x0=70,colW=74,xout=x0+NET_COMPS.length*colW+30;
+  const W=xout+40,H=210;
+  let wires="";
+  for(let w=0;w<4;w++)wires+=`<line class="netwire" x1="${x0-30}" y1="${wy[w]}" x2="${xout}" y2="${wy[w]}"/>`;
+  let cmps="";
+  NET_COMPS.forEach(([a,b],i)=>{const cx=x0+i*colW+colW/2;
+    const act=i===netStep-1?"act":"";
+    cmps+=`<g class="netcmp ${act}"><line x1="${cx}" y1="${wy[a]}" x2="${cx}" y2="${wy[b]}"/><circle cx="${cx}" cy="${wy[a]}" r="5"/><circle cx="${cx}" cy="${wy[b]}" r="5"/><polygon points="${cx-4},${wy[a]+9} ${cx+4},${wy[a]+9} ${cx},${wy[a]+2}" fill="#475569"/></g>`;});
+  const vals=netValsAtStep(netBits,netStep);
+  const tx=netStep===0?x0-30:(netStep>=NET_COMPS.length?xout:x0+netStep*colW);
+  let toks="";
+  for(let w=0;w<4;w++)toks+=`<g><circle cx="${tx}" cy="${wy[w]}" r="14" fill="${valColor(vals[w])}"/><text x="${tx}" y="${wy[w]+4}" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="13" fill="#fff">${vals[w]}</text></g>`;
+  let inChips="";
+  $("net-inputs").innerHTML=netBits.map((b,i)=>`<span class="chip-btn" data-i="${i}" role="button" tabindex="0" aria-label="Input wire ${i+1}, value ${b}. Activate to toggle." style="display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;font-family:var(--mono);font-weight:700;color:#fff;background:${valColor(b)}">${b}</span>`).join("");
+  const toggleBit=el=>{const i=+el.dataset.i;netBits[i]=netBits[i]?0:1;netStep=0;renderNetwork();updateNetOut();};
+  $("net-inputs").querySelectorAll(".chip-btn").forEach(el=>{
+    el.addEventListener("click",()=>toggleBit(el));
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleBit(el);}});
+  });
+  $("net-svg").innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">${wires}${cmps}${toks}</svg>`;
+}
+function updateNetOut(msg){
+  const vals=netValsAtStep(netBits,netStep);
+  const sorted=oSorted(applyNetwork(netBits));
+  let s=`input  = [${netBits.join(", ")}]  ·  step ${netStep}/${NET_COMPS.length}\ncurrent = [${vals.join(", ")}]`;
+  if(netStep>=NET_COMPS.length)s+=`  →  ${oSorted(vals)?'<span style="color:var(--good);font-weight:700">sorted ✓</span>':'<span style="color:var(--bad);font-weight:700">NOT sorted ✗</span>'}`;
+  if(msg)s=msg+"\n\n"+s;
+  $("net-out").innerHTML=s;
+}
+function netStepFn(){if(netStep<NET_COMPS.length){netStep++;renderNetwork();updateNetOut();}}
+function netRun(){if(netTimer){clearInterval(netTimer);netTimer=null;}
+  if(reduceMotion()){netStep=NET_COMPS.length;renderNetwork();updateNetOut();return;}   // jump to sorted state
+  netStep=0;renderNetwork();updateNetOut();
+  netTimer=setInterval(()=>{if(netStep>=NET_COMPS.length){clearInterval(netTimer);netTimer=null;return;}netStepFn();},650);}
+function netVerifyAll(){
+  if(netTimer){clearInterval(netTimer);netTimer=null;}
+  let allOk=true,lines=[];
+  for(let m=0;m<16;m++){const bits=[m>>3&1,m>>2&1,m>>1&1,m&1];const out=applyNetwork(bits);const ok=oSorted(out);if(!ok)allOk=false;
+    lines.push(`[${bits.join("")}] → [${out.join("")}] ${ok?"✓":"✗"}`);}
+  const head=allOk?`<span style="color:var(--good);font-weight:700">All 2⁴ = 16 binary inputs sort correctly.</span>\nBy the 0–1 principle, this network sorts <b>every</b> length-4 input, of any values.\n\n`:`<span style="color:var(--bad);font-weight:700">Some binary inputs fail.</span>\n\n`;
+  $("net-out").innerHTML=head+lines.join("   ");
+}
+function initNetwork(){
+  $("net-step").addEventListener("click",netStepFn);
+  $("net-play").addEventListener("click",netRun);
+  $("net-reset").addEventListener("click",()=>{if(netTimer){clearInterval(netTimer);netTimer=null;}netStep=0;renderNetwork();updateNetOut();});
+  $("net-all").addEventListener("click",netVerifyAll);
+  renderNetwork();updateNetOut();
+}
+
+/* ============================ 5 · live sort tester ============================ */
+const IMPLS={
+  correct:a=>{a=a.slice();for(let i=1;i<a.length;i++){let v=a[i],j=i-1;while(j>=0&&a[j]>v){a[j+1]=a[j];j--;}a[j+1]=v;}return a;},
+  dedup:a=>{const s=IMPLS.correct(a),r=[];for(const x of s)if(!r.length||r[r.length-1]!==x)r.push(x);return r;},
+  offbyone:a=>{a=a.slice();for(let i=1;i<a.length-1;i++){let v=a[i],j=i-1;while(j>=0&&a[j]>v){a[j+1]=a[j];j--;}a[j+1]=v;}return a;},
+  indices:a=>a.map((_,i)=>i)
+};
+let testStrategy="binary";
+function testerInputsForLength(strategy,L){
+  if(strategy==="binary")return genSequences([0,1],L);
+  if(strategy==="seq")return genSequences([0,1,2],L);
+  return genPerms(Array.from({length:L},(_,i)=>i+1)); // perm of 1..L
+}
+function barsSvg(arr,maxV){
+  if(!arr.length)return `<span class="hint">(empty list)</span>`;
+  const bw=Math.min(30,Math.max(14,240/arr.length)),gap=4,H=90;
+  const W=arr.length*(bw+gap)+4;
+  let b="";
+  arr.forEach((v,i)=>{const h=14+(v/Math.max(1,maxV))*60;const x=i*(bw+gap)+2;const y=H-h-16;
+    b+=`<rect x="${x}" y="${y.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="3" fill="${valColor(v)}"/>`;
+    b+=`<text x="${x+bw/2}" y="${H-4}" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="#6b7488">${v}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%">${b}</svg>`;
+}
+function runTester(){
+  const impl=$("t-impl").value,sort=IMPLS[impl];
+  const maxLen=+$("t-n").value;
+  let tested=0,fail=null;
+  for(let L=1;L<=maxLen&&!fail;L++){
+    for(const inp of testerInputsForLength(testStrategy,L)){
+      const original=inp.slice();
+      const result=sort(inp.slice());
+      tested++;
+      const sortedOk=oSorted(result),permOk=oPerm(original,result);
+      if(!(sortedOk&&permOk)){fail={original,result,sortedOk,permOk,L};break;}
+    }
+  }
+  $("t-count").textContent=fmtCount(tested);
+  const rv=$("t-result");
+  if(!fail){
+    rv.textContent="PASS ✓";rv.className="v";rv.style.color="var(--good)";
+    $("t-flen").textContent="—";
+    $("t-counter").innerHTML="";
+    const note=(impl==="dedup"&&testStrategy==="perm")
+      ?`<span style="color:var(--warn);font-weight:600">All ${fmtCount(tested)} permutations passed — yet this sort is broken.</span> Permutations of distinct keys contain no repeats, so the dropped-duplicate bug never shows. Switch the strategy to <b>Sequences</b> or <b>Binary</b>.`
+      :`All ${fmtCount(tested)} inputs satisfy both properties for lengths 1…${maxLen}.`;
+    $("t-log").innerHTML=`<span style="color:var(--good);font-weight:700">✓ No counterexample.</span> `+note;
+  }else{
+    rv.textContent="FAIL ✗";rv.className="v";rv.style.color="var(--bad)";
+    $("t-flen").textContent=String(fail.L);
+    const maxV=Math.max(1,...fail.original,...fail.result);
+    const why=!fail.permOk?"not a permutation of the input — elements were lost, duplicated, or invented":"not ordered — an adjacent pair is out of order";
+    $("t-counter").innerHTML=
+      `<div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:14px">
+        <div><div class="k" style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">Input</div>${barsSvg(fail.original,maxV)}</div>
+        <div><div class="k" style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">sort(input)</div>${barsSvg(fail.result,maxV)}</div>
+      </div>`;
+    $("t-log").innerHTML=`<span style="color:var(--bad);font-weight:700">✗ Counterexample at length ${fail.L}</span> (after ${fmtCount(tested)} inputs).\n`+
+      `sort([${fail.original.join(", ")}]) = [${fail.result.join(", ")}]\n`+
+      `Failed property: <b>${!fail.permOk?"permutation":"ordered"}</b> — ${why}.`;
+  }
+}
+function initTester(){
+  $("t-n").addEventListener("input",()=>{$("t-n-v").textContent=$("t-n").value;});
+  document.querySelectorAll("#t-strategy button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#t-strategy button").forEach(x=>{x.classList.remove("active");x.setAttribute("aria-pressed","false");});
+    b.classList.add("active");b.setAttribute("aria-pressed","true");testStrategy=b.dataset.s;}));
+  $("t-run").addEventListener("click",runTester);
+}
+
+/* ============================ init ============================ */
+(function init(){
+  injectDynCss();
+  // language switcher
+  let saved="python";
+  try{saved=localStorage.getItem("sortguide.lang")||"python";}catch(e){}
+  if(!LANGS[saved])saved="python";
+  document.querySelectorAll("#langbar button").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));
+  setLang(saved);            // sets active tab + renders every code block
+
+  // interactive widgets
+  initTree();
+  initPerm();
+  initMetrics();
+  initNetwork();
+  initTester();
+  runTester();               // populate the default (correct sort, binary) run
+
+  // sidebar scroll-spy
+  if("IntersectionObserver" in window){
+    const links=[...document.querySelectorAll("nav.toc a")];
+    const map=new Map(links.map(a=>[a.getAttribute("href").slice(1),a]));
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{if(e.isIntersecting){
+        links.forEach(l=>{l.classList.remove("active");l.removeAttribute("aria-current");});
+        const a=map.get(e.target.id);if(a){a.classList.add("active");a.setAttribute("aria-current","true");}
+      }});
+    },{rootMargin:"-38% 0px -55% 0px",threshold:0});
+    document.querySelectorAll("main section").forEach(s=>obs.observe(s));
+  }
+})();
+
+/* ---- test hook: exposes the pure engine to automated tests; no effect on the page UI ---- */
+if(typeof window!=="undefined"){
+  window.__sortguide={
+    genSequences,genPerms,oSorted,oPerm,fact,multisetCount,fmtCount,
+    applyNetwork,netValsAtStep,NET_COMPS,IMPLS,testerInputsForLength,
+    buildTree,highlight,SNIPPETS,LANGS
+  };
+}
+
+</script>
+</body>
+</html>

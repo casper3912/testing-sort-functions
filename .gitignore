@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# Playwright output
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# GitHub Pages staging (produced by the deploy workflow)
+_site/
+
+# Regenerated review images. The regression baselines under
+# tests/*-snapshots/ are intentionally NOT ignored — commit those.
+screenshots/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

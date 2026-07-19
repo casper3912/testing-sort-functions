@@ -1,0 +1,39 @@
+{
+  "name": "testing-sort-functions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An interactive, single-file guide to testing sort functions exhaustively — recursively generating every input when the value domain is finite.",
+  "keywords": [
+    "sorting",
+    "testing",
+    "property-based-testing",
+    "exhaustive-testing",
+    "permutations",
+    "combinations",
+    "zero-one-principle",
+    "sorting-networks",
+    "teaching",
+    "interactive"
+  ],
+  "homepage": "https://YOUR-USERNAME.github.io/testing-sort-functions/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR-USERNAME/testing-sort-functions.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR-USERNAME/testing-sort-functions/issues"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/engine.test.mjs",
+    "test:pw": "playwright test",
+    "test:ui": "playwright test ui",
+    "test:a11y": "playwright test a11y",
+    "test:visual": "playwright test visual",
+    "test:visual:update": "playwright test visual --update-snapshots",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
