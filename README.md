@@ -2,11 +2,11 @@
 
 > An interactive, single-file guide to testing sort implementations **exhaustively** — by recursively generating *every* possible input when the value domain is finite or limited.
 
-[![CI](https://github.com/YOUR-USERNAME/testing-sort-functions/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-USERNAME/testing-sort-functions/actions/workflows/ci.yml)
-[![Deploy](https://github.com/YOUR-USERNAME/testing-sort-functions/actions/workflows/pages.yml/badge.svg)](https://github.com/YOUR-USERNAME/testing-sort-functions/actions/workflows/pages.yml)
+[![CI](https://github.com/casper3912/testing-sort-functions/actions/workflows/ci.yml/badge.svg)](https://github.com/casper3912/testing-sort-functions/actions/workflows/ci.yml)
+[![Deploy](https://github.com/casper3912/testing-sort-functions/actions/workflows/pages.yml/badge.svg)](https://github.com/casper3912/testing-sort-functions/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**▶ [Read it live](https://YOUR-USERNAME.github.io/testing-sort-functions/)**
+**▶ [Read it live](https://casper3912.github.io/testing-sort-functions/)**
 
 ---
 
@@ -56,7 +56,7 @@ A single self-contained HTML file (~105 KB, zero dependencies, zero network call
 No build step. No dependencies. Just open it:
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/testing-sort-functions.git
+git clone https://github.com/casper3912/testing-sort-functions.git
 cd testing-sort-functions
 open index.html          # macOS  (Linux: xdg-open · Windows: start)
 ```
@@ -112,7 +112,7 @@ dash pattern, and marker shape — plus direct labels, so it survives color-visi
 
 ## Setup after forking
 
-1. Find-and-replace **`YOUR-USERNAME`** across `README.md` and `package.json` with your GitHub handle.
+1. Find-and-replace **`casper3912`** across `README.md` and `package.json` with your GitHub handle.
 2. Enable Pages: **Settings → Pages → Source: GitHub Actions**. The next push to `main` publishes the site.
 3. Update the copyright holder in [`LICENSE`](LICENSE) if needed.
 
