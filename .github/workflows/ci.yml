@@ -49,3 +49,27 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+  snippets:
+    name: Compile & run all embedded snippets (7 languages)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Extract snippets from index.html
+        run: node tools/extract-snippets.mjs
+      - name: Compile and run every snippet
+        run: bash tools/run-snippets.sh
