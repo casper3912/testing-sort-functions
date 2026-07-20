@@ -51,7 +51,7 @@ jobs:
           retention-days: 14
 
   snippets:
-    name: Compile & run all embedded snippets (7 languages)
+    name: Build & run cumulative snippet programs (7 languages)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
         with:
           go-version: stable
       - uses: dtolnay/rust-toolchain@stable
-      - name: Extract snippets from index.html
-        run: node tools/extract-snippets.mjs
-      - name: Compile and run every snippet
+      # Extracts fragments from index.html, merges them in page/dependency
+      # order into one program per language, then runs asserting drivers.
+      - name: Build and run cumulative snippet programs
         run: bash tools/run-snippets.sh
